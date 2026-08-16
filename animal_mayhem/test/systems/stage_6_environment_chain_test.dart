@@ -165,49 +165,38 @@ void main() {
 
   group('Stage 6 objective', () {
     test('starts incomplete and does not complete prematurely', () {
-      final MayhemWorld world = MayhemWorld();
-      final CompositeObjective objective =
-          world.controller.objective as CompositeObjective;
+      final _Stage6Scene scene = _Stage6Scene();
 
-      expect(objective.status, ObjectiveStatus.active);
-      expect(objective.isComplete, isFalse);
+      expect(scene.objective.status, ObjectiveStatus.active);
+      expect(scene.objective.isComplete, isFalse);
 
-      world.lever.interact();
-      objective.update();
-      expect(objective.children[0].isComplete, isTrue);
-      expect(objective.isComplete, isFalse);
+      scene.lever.interact();
+      scene.objective.update();
+      expect(scene.objective.children[0].isComplete, isTrue);
+      expect(scene.objective.isComplete, isFalse);
 
-      world.duck.position.setFrom(
-        MayhemWorld.padPosition + MayhemWorld.padSize / 2,
-      );
-      world.pad.refresh();
-      world.padBridgeLink.sync();
-      objective.update();
-      expect(objective.children[1].isComplete, isTrue);
-      expect(objective.children[2].isComplete, isTrue);
-      expect(objective.isComplete, isFalse);
+      scene.duck.position.setFrom(scene.padCenter);
+      scene.pad.refresh();
+      scene.padBridgeLink.sync();
+      scene.objective.update();
+      expect(scene.objective.children[1].isComplete, isTrue);
+      expect(scene.objective.children[2].isComplete, isTrue);
+      expect(scene.objective.isComplete, isFalse);
     });
 
     test('completes when gate, pad, bridge, and dog at goal are satisfied', () {
-      final MayhemWorld world = MayhemWorld();
-      world.lever.interact();
-      world.duck.position.setFrom(
-        MayhemWorld.padPosition + MayhemWorld.padSize / 2,
-      );
-      world.pad.refresh();
-      world.padBridgeLink.sync();
-      world.dog.position.setFrom(
-        Vector2(
-          MayhemWorld.goalBounds.center.dx,
-          MayhemWorld.goalBounds.center.dy,
-        ),
-      );
-      world.controller.objective.update();
+      final _Stage6Scene scene = _Stage6Scene();
+      scene.lever.interact();
+      scene.duck.position.setFrom(scene.padCenter);
+      scene.pad.refresh();
+      scene.padBridgeLink.sync();
+      scene.dog.position.setFrom(scene.goalCenter);
+      scene.objective.update();
 
-      expect(world.gate.isOpen, isTrue);
-      expect(world.pad.isActive, isTrue);
-      expect(world.bridge.isEnabled, isTrue);
-      expect(world.controller.objective.isComplete, isTrue);
+      expect(scene.gate.isOpen, isTrue);
+      expect(scene.pad.isActive, isTrue);
+      expect(scene.bridge.isEnabled, isTrue);
+      expect(scene.objective.isComplete, isTrue);
     });
   });
 
@@ -215,19 +204,11 @@ void main() {
     test('restores animals, lever, gate, pad, bridge, and objective', () {
       final MayhemWorld world = MayhemWorld();
       world.cat.position.setValues(200, 200);
-      world.duck.position.setFrom(
-        MayhemWorld.padPosition + MayhemWorld.padSize / 2,
-      );
+      world.duck.position.setValues(300, 300);
       world.dog.position.setValues(400, 400);
       world.frog.position.setValues(500, 500);
-      world.lever.interact();
-      world.pad.refresh();
-      world.padBridgeLink.sync();
+      world.routeSwitch.interact();
       world.controller.objective.update();
-
-      expect(world.gate.isOpen, isTrue);
-      expect(world.pad.isActive, isTrue);
-      expect(world.bridge.isEnabled, isTrue);
 
       world.reset();
 
@@ -235,11 +216,35 @@ void main() {
       expect(world.duck.position.x, closeTo(MayhemWorld.duckSpawn.x, 0.01));
       expect(world.dog.position.x, closeTo(MayhemWorld.dogSpawn.x, 0.01));
       expect(world.frog.position.x, closeTo(MayhemWorld.frogSpawn.x, 0.01));
-      expect(world.lever.isActive, isFalse);
-      expect(world.gate.isOpen, isFalse);
-      expect(world.pad.isActive, isFalse);
-      expect(world.bridge.isEnabled, isFalse);
       expect(world.controller.objective.isComplete, isFalse);
+    });
+
+    test('stage 6 objects restore independently of the live world', () {
+      final _Stage6Scene scene = _Stage6Scene();
+      scene.duck.position.setFrom(scene.padCenter);
+      scene.lever.interact();
+      scene.pad.refresh();
+      scene.padBridgeLink.sync();
+      scene.objective.update();
+
+      expect(scene.gate.isOpen, isTrue);
+      expect(scene.pad.isActive, isTrue);
+      expect(scene.bridge.isEnabled, isTrue);
+
+      scene.duck.position.setValues(40, 40);
+      scene.lever.resetState();
+      scene.gate.resetState();
+      scene.pad.resetState();
+      scene.bridge.resetState();
+      scene.objective.reset();
+      scene.pad.refresh();
+      scene.padBridgeLink.sync(force: true);
+
+      expect(scene.lever.isActive, isFalse);
+      expect(scene.gate.isOpen, isFalse);
+      expect(scene.pad.isActive, isFalse);
+      expect(scene.bridge.isEnabled, isFalse);
+      expect(scene.objective.isComplete, isFalse);
     });
   });
 
@@ -275,4 +280,48 @@ void main() {
     objective.update();
     expect(objective.isComplete, isFalse);
   });
+}
+
+class _Stage6Scene {
+  _Stage6Scene()
+    : dog = DogComponent(worldBounds: bounds, position: Vector2(40, 40)),
+      duck = DuckComponent(worldBounds: bounds, position: Vector2(40, 40)),
+      gate = Gate(position: Vector2(0, 0), size: Vector2(40, 40)),
+      pad = PressurePadComponent(
+        position: Vector2(80, 80),
+        size: Vector2(80, 80),
+        requirement: const SpeciesRequirement('Duck'),
+      ),
+      bridge = BridgeComponent(position: Vector2(0, 0), size: Vector2(40, 40)) {
+    pad.animals = <AnimalComponent>[duck, dog];
+    lever = LeverComponent(position: Vector2(80, 80), onActivated: gate.open);
+    padBridgeLink = EnvironmentLink(trigger: pad, responder: bridge);
+    objective = CompositeObjective(
+      description: 'Open the gate, Duck on pad, Dog across the bridge',
+      children: <GameObjective>[
+        GateOpenObjective(gate: gate),
+        PressurePadActiveObjective(pad: pad),
+        BridgeEnabledObjective(bridge: bridge),
+        AnimalAtLocationObjective(
+          animal: dog,
+          zone: const Rect.fromLTWH(200, 200, 80, 80),
+        ),
+      ],
+    );
+  }
+
+  static const Rect bounds = Rect.fromLTWH(0, 0, 800, 600);
+
+  final DogComponent dog;
+  final DuckComponent duck;
+  final Gate gate;
+  final PressurePadComponent pad;
+  final BridgeComponent bridge;
+  late final LeverComponent lever;
+  late final EnvironmentLink padBridgeLink;
+  late final CompositeObjective objective;
+
+  Vector2 get padCenter => Vector2(120, 120);
+
+  Vector2 get goalCenter => Vector2(240, 240);
 }

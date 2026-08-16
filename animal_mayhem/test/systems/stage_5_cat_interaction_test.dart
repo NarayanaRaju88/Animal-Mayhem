@@ -15,6 +15,7 @@ import 'package:animal_mayhem/game/systems/command/command_status.dart';
 import 'package:animal_mayhem/game/systems/command/interact_command.dart';
 import 'package:animal_mayhem/game/systems/environment/physical_profile.dart';
 import 'package:animal_mayhem/game/systems/interaction/interactable.dart';
+import 'package:animal_mayhem/game/systems/environment/route_state.dart';
 import 'package:animal_mayhem/game/systems/objective/animal_at_location_objective.dart';
 import 'package:animal_mayhem/game/systems/objective/composite_objective.dart';
 import 'package:animal_mayhem/game/systems/objective/game_objective.dart';
@@ -255,13 +256,11 @@ void main() {
   });
 
   group('Stage 5 objective', () {
-    test('starts incomplete and ignores duck at the goal before the lever', () {
+    test('starts incomplete and ignores duck at the goal before the route', () {
       final MayhemWorld world = MayhemWorld();
 
       expect(world.controller.objective.status, ObjectiveStatus.active);
       expect(world.controller.objective.isComplete, isFalse);
-      expect(world.gate.isOpen, isFalse);
-      expect(world.lever.isActive, isFalse);
 
       world.duck.position.setFrom(
         Vector2(
@@ -305,20 +304,19 @@ void main() {
       },
     );
 
-    test('reset restores animals, lever, gate, commands, and objective', () {
+    test('reset restores animals, commands, and objective', () {
       final MayhemWorld world = MayhemWorld();
       world.controller.handleAnimalTap(world.cat);
       world.controller.chooseCommand(CommandKind.interact);
-      world.controller.handleInteractableTap(world.lever);
+      world.controller.handleInteractableTap(world.routeSwitch);
       world.cat.position.setValues(200, 200);
       world.duck.position.setValues(300, 300);
       world.dog.position.setValues(400, 400);
       world.frog.position.setValues(500, 500);
-      world.lever.interact();
+      world.routeSwitch.interact();
       world.controller.objective.update();
 
-      expect(world.gate.isOpen, isTrue);
-      expect(world.lever.isActive, isTrue);
+      expect(world.routeSwitch.route, RouteId.b);
 
       world.reset();
 
@@ -327,8 +325,6 @@ void main() {
       expect(world.duck.position.x, closeTo(MayhemWorld.duckSpawn.x, 0.01));
       expect(world.dog.position.x, closeTo(MayhemWorld.dogSpawn.x, 0.01));
       expect(world.frog.position.x, closeTo(MayhemWorld.frogSpawn.x, 0.01));
-      expect(world.lever.isActive, isFalse);
-      expect(world.gate.isOpen, isFalse);
       expect(world.controller.objective.isComplete, isFalse);
       expect(world.controller.selectedAnimal, isNull);
       expect(world.controller.commandKind, isNull);
@@ -336,17 +332,17 @@ void main() {
     });
 
     test(
-      'INTERACT is executable only when the cat is in range of the lever',
+      'INTERACT is executable only when the cat is in range of the switch',
       () {
         final MayhemWorld world = MayhemWorld();
         world.controller.handleAnimalTap(world.cat);
         world.controller.chooseCommand(CommandKind.interact);
-        world.controller.handleInteractableTap(world.lever);
+        world.controller.handleInteractableTap(world.routeSwitch);
 
         expect(world.controller.selectedTarget, isA<InteractableTarget>());
         expect(world.controller.canExecute, isFalse);
 
-        world.cat.position.setFrom(MayhemWorld.leverPosition);
+        world.cat.position.setFrom(MayhemWorld.switchPosition);
         expect(world.controller.canExecute, isTrue);
       },
     );
