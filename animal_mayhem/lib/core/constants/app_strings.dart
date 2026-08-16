@@ -5,4 +5,6 @@ abstract final class AppStrings {
       'A physics-based animal puzzle game. Gameplay arrives in later stages.';
   static const String play = 'PLAY';
   static const String gameScreenTitle = 'Game';
+  static const String dogTest = 'DOG TEST';
+  static const String reset = 'Reset';
 }
