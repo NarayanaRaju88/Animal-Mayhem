@@ -1,3 +1,6 @@
+/// Category A: Stage 6 pad/bridge/gate history. Some reset cases use MayhemWorld.
+library;
+
 import 'dart:ui';
 
 import 'package:animal_mayhem/game/components/animals/animal_component.dart';

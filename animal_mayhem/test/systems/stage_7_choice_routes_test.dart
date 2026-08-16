@@ -1,3 +1,6 @@
+/// Category A: Stage 7 exclusive-route history tests.
+library;
+
 import 'dart:ui';
 
 import 'package:animal_mayhem/game/components/animals/cat_component.dart';

@@ -4,7 +4,7 @@ import '../../components/animals/animal_component.dart';
 import 'game_objective.dart';
 import 'objective_status.dart';
 
-/// Completes when [animal] is inside [zone].
+/// Completes the first time [animal] is inside [zone], then latches until [reset].
 class AnimalAtLocationObjective extends GameObjective {
   AnimalAtLocationObjective({
     required this.animal,
