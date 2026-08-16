@@ -16,6 +16,7 @@ class DevelopmentCommandBar extends StatelessWidget {
   static const Key followButtonKey = Key('command_follow_button');
   static const Key jumpButtonKey = Key('command_jump_button');
   static const Key interactButtonKey = Key('command_interact_button');
+  static const Key climbButtonKey = Key('command_climb_button');
   static const Key executeButtonKey = Key('command_execute_button');
 
   final GameController controller;
@@ -31,6 +32,8 @@ class DevelopmentCommandBar extends StatelessWidget {
         return jumpButtonKey;
       case CommandKind.interact:
         return interactButtonKey;
+      case CommandKind.climb:
+        return climbButtonKey;
     }
   }
 
@@ -44,6 +47,8 @@ class DevelopmentCommandBar extends StatelessWidget {
         return AppStrings.jump;
       case CommandKind.interact:
         return AppStrings.interact;
+      case CommandKind.climb:
+        return AppStrings.climb;
     }
   }
 
