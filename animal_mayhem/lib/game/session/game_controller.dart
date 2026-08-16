@@ -2,15 +2,19 @@ import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
 
 import '../components/animals/animal_component.dart';
+import '../components/environment/climbable_surface_component.dart';
 import '../systems/behavior/animal_target.dart';
+import '../systems/behavior/climbable_target.dart';
 import '../systems/behavior/follow_target.dart';
 import '../systems/behavior/interactable_target.dart';
+import '../systems/command/climb_command.dart';
 import '../systems/command/command_kind.dart';
 import '../systems/command/command_runner.dart';
 import '../systems/command/follow_command.dart';
 import '../systems/command/interact_command.dart';
 import '../systems/command/jump_command.dart';
 import '../systems/command/move_command.dart';
+import '../systems/environment/height_level.dart';
 import '../systems/interaction/interactable.dart';
 import '../systems/interaction/resettable.dart';
 import '../systems/objective/game_objective.dart';
@@ -46,8 +50,22 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  List<CommandKind> get availableCommands =>
-      selectedAnimal?.availableCommands ?? const <CommandKind>[];
+  List<CommandKind> get availableCommands {
+    final AnimalComponent? animal = selectedAnimal;
+    if (animal == null) {
+      return const <CommandKind>[];
+    }
+    return animal.availableCommands.where((CommandKind kind) {
+      if (kind != CommandKind.climb) {
+        return true;
+      }
+      final FollowTarget? target = selectedTarget;
+      if (target is! ClimbableTarget) {
+        return false;
+      }
+      return animal.canAttemptClimb(target.surface);
+    }).toList();
+  }
 
   void handleAnimalTap(AnimalComponent animal) {
     if (commandKind == CommandKind.follow &&
@@ -65,7 +83,8 @@ class GameController extends ChangeNotifier {
     if (selectedAnimal == null || commandKind == null) {
       return;
     }
-    if (commandKind == CommandKind.interact) {
+    if (commandKind == CommandKind.interact ||
+        commandKind == CommandKind.climb) {
       return;
     }
     selectedTarget = WorldPositionTarget(worldPosition);
@@ -89,13 +108,30 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void handleClimbableTap(ClimbableSurfaceComponent surface) {
+    final AnimalComponent? animal = selectedAnimal;
+    if (animal == null || !animal.hasClimbAbility) {
+      return;
+    }
+    selectedTarget = ClimbableTarget(surface);
+    targetDescription = surface.label;
+    notifyListeners();
+  }
+
   void chooseCommand(CommandKind kind) {
     if (!availableCommands.contains(kind)) {
       return;
     }
+    final FollowTarget? previousTarget = selectedTarget;
+    final String previousDescription = targetDescription;
     commandKind = kind;
-    selectedTarget = null;
-    targetDescription = 'None';
+    if (kind == CommandKind.climb && previousTarget is ClimbableTarget) {
+      selectedTarget = previousTarget;
+      targetDescription = previousDescription;
+    } else {
+      selectedTarget = null;
+      targetDescription = 'None';
+    }
     notifyListeners();
   }
 
@@ -133,6 +169,10 @@ class GameController extends ChangeNotifier {
       case CommandKind.interact:
         if (target is InteractableTarget) {
           commands.start(InteractCommand(actor: actor, target: target.object));
+        }
+      case CommandKind.climb:
+        if (target is ClimbableTarget) {
+          commands.start(ClimbCommand(actor: actor, surface: target.surface));
         }
     }
     notifyListeners();
@@ -189,6 +229,12 @@ class GameController extends ChangeNotifier {
       }
       return actor.canAttemptInteraction(target.object);
     }
+    if (kind == CommandKind.climb) {
+      if (target is! ClimbableTarget) {
+        return false;
+      }
+      return actor.canAttemptClimb(target.surface);
+    }
     return true;
   }
 
@@ -197,7 +243,20 @@ class GameController extends ChangeNotifier {
   String get objectiveLabel =>
       objective.isComplete ? 'Complete' : objective.description;
 
-  String get environmentLabel => environmentStatus?.call() ?? '';
+  String get environmentLabel {
+    final String reported = environmentStatus?.call() ?? '';
+    final AnimalComponent? animal = selectedAnimal;
+    if (animal == null) {
+      return reported;
+    }
+    final String level = animal.heightLevel == HeightLevel.upper
+        ? 'UPPER'
+        : 'LOWER';
+    if (reported.isEmpty) {
+      return 'Level: $level';
+    }
+    return 'Level: $level  $reported';
+  }
 
   void _select(AnimalComponent animal) {
     for (final AnimalComponent candidate in animals) {

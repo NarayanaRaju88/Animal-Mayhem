@@ -7,16 +7,20 @@ import 'package:flame/events.dart';
 import '../../../core/utils/angles.dart';
 import '../../systems/abilities/ability_kind.dart';
 import '../../systems/abilities/animal_abilities.dart';
+import '../../systems/abilities/climb_capability.dart';
+import '../../systems/abilities/climb_motion.dart';
 import '../../systems/abilities/jump_ability.dart';
 import '../../systems/abilities/jump_motion.dart';
 import '../../systems/behavior/follow_target.dart';
 import '../../systems/command/command_kind.dart';
 import '../../systems/environment/force_capability.dart';
+import '../../systems/environment/height_level.dart';
 import '../../systems/environment/movement_capabilities.dart';
 import '../../systems/environment/physical_profile.dart';
 import '../../systems/environment/terrain_kind.dart';
 import '../../systems/environment/terrain_map.dart';
 import '../../systems/interaction/interactable.dart';
+import '../environment/climbable_surface_component.dart';
 import '../environment/narrow_passage.dart';
 import '../objects/bridge_component.dart';
 import '../objects/obstacle_component.dart';
@@ -38,6 +42,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     this.abilities = AnimalAbilities.walk,
     this.force = ForceCapability.medium,
     this.jumpAbility,
+    this.climbAbility,
     PhysicalProfile? profile,
     this.terrain,
     this.onTapped,
@@ -62,6 +67,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   final AnimalAbilities abilities;
   final ForceCapability force;
   final JumpAbility? jumpAbility;
+  final ClimbCapability? climbAbility;
   TerrainMap? terrain;
   List<ObstacleComponent> obstacles = <ObstacleComponent>[];
   List<NarrowPassage> passages = <NarrowPassage>[];
@@ -78,6 +84,8 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   bool _followMode = false;
   double _stopDistance = 0;
   JumpMotion? _jump;
+  ClimbMotion? _climb;
+  bool hasCompletedClimb = false;
   double _landingTimer = 0;
   late final SelectionRing _selectionRing = SelectionRing(ownerSize: size);
 
@@ -89,8 +97,15 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
 
   bool get isJumping => _jump != null;
 
+  bool get isClimbing => _climb != null;
+
   bool get hasJumpAbility =>
       abilities.has(AbilityKind.jump) && jumpAbility != null;
+
+  bool get hasClimbAbility =>
+      abilities.has(AbilityKind.climb) && climbAbility != null;
+
+  HeightLevel get heightLevel => HeightLevel.fromY(position.y);
 
   List<CommandKind> get availableCommands => abilities.availableCommands;
 
@@ -115,7 +130,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
 
   /// Moves toward a fixed world point. Clamped to the playable inner bounds.
   void moveTo(Vector2 worldPosition) {
-    if (isJumping) {
+    if (isJumping || isClimbing) {
       return;
     }
     _followMode = false;
@@ -127,7 +142,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
 
   /// Follows any [FollowTarget], including a later moving animal or object.
   void follow(FollowTarget newTarget, {double? stopDistance}) {
-    if (isJumping) {
+    if (isJumping || isClimbing) {
       return;
     }
     _followMode = true;
@@ -142,7 +157,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     if (!hasJumpAbility || ability == null) {
       return false;
     }
-    if (isJumping || state == AnimalState.landing) {
+    if (isJumping || isClimbing || state == AnimalState.landing) {
       return false;
     }
 
@@ -173,8 +188,37 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     return true;
   }
 
+  bool canAttemptClimb(ClimbableSurfaceComponent surface) {
+    if (!hasClimbAbility || isClimbing || isJumping) {
+      return false;
+    }
+    if (!surface.canBeUsedBy(this)) {
+      return false;
+    }
+    return _isWithinClimbRange(surface);
+  }
+
+  /// Starts a commanded climb. Returns false if the animal cannot climb now.
+  bool startClimb(ClimbableSurfaceComponent surface) {
+    final ClimbCapability? ability = climbAbility;
+    if (ability == null || !canAttemptClimb(surface)) {
+      return false;
+    }
+    target = null;
+    _followMode = false;
+    velocity.setZero();
+    _climb = ClimbMotion(
+      start: position.clone(),
+      end: surface.top.clone(),
+      duration: ability.duration,
+    );
+    state = AnimalState.climbing;
+    return true;
+  }
+
   void clearTarget() {
     _cancelJump();
+    _cancelClimb();
     target = null;
     _followMode = false;
     _landingTimer = 0;
@@ -184,7 +228,9 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
 
   void resetTo(Vector2 spawn) {
     _cancelJump();
+    _cancelClimb();
     _landingTimer = 0;
+    hasCompletedClimb = false;
     position.setFrom(clampToInnerBounds(spawn));
     angle = 0;
     isSelected = false;
@@ -217,7 +263,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     if (!_fitsPassages(point)) {
       return false;
     }
-    if (isJumping) {
+    if (isJumping || isClimbing) {
       return true;
     }
     return !_blockedByObstacle(
@@ -243,6 +289,11 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   void update(double dt) {
     super.update(dt);
     if (dt <= 0) {
+      return;
+    }
+
+    if (_climb != null) {
+      _updateClimb(dt);
       return;
     }
 
@@ -340,12 +391,49 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     }
   }
 
+  void _updateClimb(double dt) {
+    final ClimbMotion climb = _climb!;
+    climb.advance(dt);
+    position.setFrom(climb.position);
+    final Vector2 delta = climb.end - climb.start;
+    if (delta.length2 > 0) {
+      angle = math.atan2(delta.y, delta.x);
+    }
+    if (climb.isComplete) {
+      position.setFrom(climb.end);
+      _climb = null;
+      hasCompletedClimb = true;
+      state = AnimalState.idle;
+    }
+  }
+
   void _cancelJump() {
     final JumpMotion? jump = _jump;
     if (jump != null) {
       position.setFrom(jump.groundPosition);
       _jump = null;
     }
+  }
+
+  void _cancelClimb() {
+    _climb = null;
+  }
+
+  bool _isWithinClimbRange(ClimbableSurfaceComponent surface) {
+    final ClimbCapability? ability = climbAbility;
+    if (ability == null) {
+      return false;
+    }
+    final double range = math.min(ability.range, surface.climbRange);
+    final double minX = surface.position.x;
+    final double maxX = surface.position.x + surface.size.x;
+    final double minY = surface.position.y;
+    final double maxY = surface.position.y + surface.size.y;
+    final Vector2 closest = Vector2(
+      position.x.clamp(minX, maxX),
+      position.y.clamp(minY, maxY),
+    );
+    return position.distanceTo(closest) <= range;
   }
 
   bool _canLandAt(Vector2 point) {
