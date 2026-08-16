@@ -24,6 +24,7 @@ void main() {
 
     await tester.tap(find.byKey(HomeScreen.playButtonKey));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byType(GameScreen), findsOneWidget);
     expect(find.byType(GameWidget<AnimalMayhemGame>), findsOneWidget);
