@@ -190,6 +190,20 @@ void main() {
       expect(world.wideGate.isOpen, isTrue);
       expect(world.heavyPad.isActive, isTrue);
       expect(world.heavyGate.isOpen, isTrue);
+      expect(
+        world.controller.objective.isComplete,
+        isFalse,
+        reason: 'Stage 9 requires the monkey climb, not the dog at the goal',
+      );
+
+      world.monkey.hasCompletedClimb = true;
+      world.monkey.position.setFrom(
+        Vector2(
+          MayhemWorld.goalBounds.center.dx,
+          MayhemWorld.goalBounds.center.dy,
+        ),
+      );
+      world.controller.objective.update();
       expect(world.controller.objective.isComplete, isTrue);
     });
   });
