@@ -45,3 +45,13 @@ final class EnvironmentSignal implements EnvironmentTrigger {
     _active = initial;
   }
 }
+
+/// True when [source] is false. Used for exclusive route pairs.
+final class InvertedTrigger implements EnvironmentTrigger {
+  InvertedTrigger(this.source);
+
+  final EnvironmentTrigger source;
+
+  @override
+  bool get isActive => !source.isActive;
+}
