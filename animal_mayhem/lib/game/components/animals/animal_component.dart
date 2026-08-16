@@ -13,6 +13,7 @@ import '../../systems/abilities/coil_capability.dart';
 import '../../systems/abilities/jump_ability.dart';
 import '../../systems/abilities/jump_motion.dart';
 import '../../systems/behavior/follow_target.dart';
+import '../../systems/command/attempt_failure.dart';
 import '../../systems/command/command_kind.dart';
 import '../../systems/environment/force_capability.dart';
 import '../../systems/environment/height_level.dart';
@@ -119,13 +120,20 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   List<CommandKind> get availableCommands => abilities.availableCommands;
 
   bool canAttemptInteraction(Interactable object) {
+    return interactFailure(object) == AttemptFailure.none;
+  }
+
+  AttemptFailure interactFailure(Interactable object) {
     if (!abilities.has(AbilityKind.interact)) {
-      return false;
+      return AttemptFailure.missingCapability;
     }
     if (!object.canInteract) {
-      return false;
+      return AttemptFailure.incompatible;
     }
-    return object.worldPosition.distanceTo(position) <= object.interactionRange;
+    if (object.worldPosition.distanceTo(position) > object.interactionRange) {
+      return AttemptFailure.outOfRange;
+    }
+    return AttemptFailure.none;
   }
 
   /// Uses [object] when the animal has the interact ability and is in range.
@@ -158,6 +166,31 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     _stopDistance = stopDistance ?? attributes.followDistance;
     target = newTarget;
     state = AnimalState.following;
+  }
+
+  AttemptFailure jumpFailure(Vector2 worldPosition) {
+    final JumpAbility? ability = jumpAbility;
+    if (!hasJumpAbility || ability == null) {
+      return AttemptFailure.missingCapability;
+    }
+    if (isJumping || isClimbing || state == AnimalState.landing) {
+      return AttemptFailure.busy;
+    }
+
+    Vector2 destination = clampToInnerBounds(worldPosition);
+    final Vector2 offset = destination - position;
+    final double distance = offset.length;
+    if (distance < 4) {
+      return AttemptFailure.incompatible;
+    }
+    if (distance > ability.maxDistance) {
+      destination = position + offset.normalized() * ability.maxDistance;
+      destination = clampToInnerBounds(destination);
+    }
+    if (!_canLandAt(destination) || !_jumpPathIsClear(destination)) {
+      return AttemptFailure.pathBlocked;
+    }
+    return AttemptFailure.none;
   }
 
   /// Starts a commanded jump. Returns false if the animal cannot jump now.
@@ -198,16 +231,26 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   }
 
   bool canAttemptClimb(ClimbableSurfaceComponent surface) {
-    if (!hasClimbAbility || isClimbing || isJumping) {
-      return false;
+    return climbFailure(surface) == AttemptFailure.none;
+  }
+
+  AttemptFailure climbFailure(ClimbableSurfaceComponent surface) {
+    if (!hasClimbAbility) {
+      return AttemptFailure.missingCapability;
+    }
+    if (isClimbing || isJumping) {
+      return AttemptFailure.busy;
     }
     if (!surface.canBeUsedBy(this)) {
-      return false;
+      return AttemptFailure.incompatible;
     }
     if (!_isWithinClimbRange(surface)) {
-      return false;
+      return AttemptFailure.outOfRange;
     }
-    return _climbRouteIsClear(surface);
+    if (!_climbRouteIsClear(surface)) {
+      return AttemptFailure.pathBlocked;
+    }
+    return AttemptFailure.none;
   }
 
   /// Starts a commanded climb. Returns false if the animal cannot climb now.
@@ -229,16 +272,26 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   }
 
   bool canAttemptCoil(CoilAnchorComponent anchor) {
-    if (!hasCoilAbility || isClimbing || isJumping) {
-      return false;
+    return coilFailure(anchor) == AttemptFailure.none;
+  }
+
+  AttemptFailure coilFailure(CoilAnchorComponent anchor) {
+    if (!hasCoilAbility) {
+      return AttemptFailure.missingCapability;
+    }
+    if (isClimbing || isJumping) {
+      return AttemptFailure.busy;
     }
     if (!anchor.canBeUsedBy(this)) {
-      return false;
+      return AttemptFailure.incompatible;
     }
     if (!_isWithinCoilRange(anchor)) {
-      return false;
+      return AttemptFailure.outOfRange;
     }
-    return _coilRouteIsClear(anchor);
+    if (!_coilRouteIsClear(anchor)) {
+      return AttemptFailure.pathBlocked;
+    }
+    return AttemptFailure.none;
   }
 
   /// Holds [anchor] when the animal can coil. Returns false otherwise.

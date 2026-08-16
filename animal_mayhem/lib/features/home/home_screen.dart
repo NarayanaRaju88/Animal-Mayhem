@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/routes/app_routes.dart';
 import '../../core/constants/app_strings.dart';
 
-/// Placeholder home screen for the future game.
+/// Home screen for Animal Mayhem.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 

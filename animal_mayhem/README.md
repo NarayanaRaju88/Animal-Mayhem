@@ -1,18 +1,18 @@
 # Animal Mayhem
 
-Physics-based animal puzzle game built with Flutter and Flame.
+Playable 2D animal puzzle game prototype built with Flutter and Flame.
 
-Players will issue commands to animals with distinct behaviors, creating chain
-reactions to solve puzzles. Gameplay systems are not implemented yet.
+Players issue commands to animals with distinct capabilities, creating chain
+reactions to solve a development puzzle. This repository contains the completed
+initial Stage 1–10 gameplay roadmap as a **10-stage gameplay prototype**, not
+ten separately packaged commercial levels.
 
-## Stage 1
+## Current prototype
 
-This repository currently contains the project foundation only:
+Animals: Dog, Duck, Frog, Cat, Buffalo, Monkey, Snake.
 
-- Flutter application shell (Material 3, light and dark themes)
-- Home screen with a PLAY action
-- Game screen hosting an empty Flame canvas
-- Modular `lib/` layout for later animals, physics, levels, and features
+Commands are capability-driven (Move, Follow, Swim, Jump, Interact, Force,
+Climb, Coil) inside a single stacked play space.
 
 ## Requirements
 
