@@ -68,6 +68,13 @@ class DevelopmentCommandBar extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (controller.environmentLabel.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 4),
+                Text(
+                  '${AppStrings.environment}: ${controller.environmentLabel}',
+                  style: textTheme.bodySmall,
+                ),
+              ],
               const SizedBox(height: 4),
               Text(
                 '${AppStrings.selected}: ${controller.selectedLabel}   '

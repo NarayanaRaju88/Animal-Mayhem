@@ -2,12 +2,22 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 
+import '../../systems/environment/environment_link.dart';
 import '../../systems/interaction/resettable.dart';
 import 'obstacle_component.dart';
 
 /// Obstacle that can open and stop blocking movement.
-class Gate extends ObstacleComponent implements Resettable {
-  Gate({required super.position, required super.size}) : super(jumpable: false);
+class Gate extends ObstacleComponent
+    implements Resettable, EnvironmentResponder {
+  Gate({
+    required super.position,
+    required super.size,
+    this.followEnvironment = false,
+  }) : super(jumpable: false);
+
+  /// When true, the gate tracks the environment signal (open while active).
+  /// When false, [open] and an active signal latch until reset (Stage 5 lever).
+  final bool followEnvironment;
 
   bool isOpen = false;
 
@@ -24,6 +34,17 @@ class Gate extends ObstacleComponent implements Resettable {
 
   void open() {
     isOpen = true;
+  }
+
+  @override
+  void applyEnvironmentState(bool active) {
+    if (followEnvironment) {
+      isOpen = active;
+      return;
+    }
+    if (active) {
+      isOpen = true;
+    }
   }
 
   @override

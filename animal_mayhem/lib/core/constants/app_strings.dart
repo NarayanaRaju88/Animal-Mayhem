@@ -17,4 +17,5 @@ abstract final class AppStrings {
   static const String execute = 'EXECUTE';
   static const String selectAnimalHint = 'Select an animal';
   static const String objective = 'Objective';
+  static const String environment = 'Environment';
 }

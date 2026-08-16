@@ -17,6 +17,7 @@ import '../../systems/environment/terrain_kind.dart';
 import '../../systems/environment/terrain_map.dart';
 import '../../systems/interaction/interactable.dart';
 import '../environment/narrow_passage.dart';
+import '../objects/bridge_component.dart';
 import '../objects/obstacle_component.dart';
 import 'animal_attributes.dart';
 import 'animal_state.dart';
@@ -60,6 +61,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   TerrainMap? terrain;
   List<ObstacleComponent> obstacles = <ObstacleComponent>[];
   List<NarrowPassage> passages = <NarrowPassage>[];
+  List<BridgeComponent> bridges = <BridgeComponent>[];
   void Function(AnimalComponent animal)? onTapped;
   Rect worldBounds;
 
@@ -202,7 +204,9 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
 
   bool canOccupy(Vector2 point) {
     final TerrainMap? map = terrain;
-    if (map != null && !capabilities.canTraverse(map.kindAt(point))) {
+    if (map != null &&
+        !capabilities.canTraverse(map.kindAt(point)) &&
+        !_enabledBridgeAt(point)) {
       return false;
     }
     if (!_fitsPassages(point)) {
@@ -326,7 +330,9 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
 
   bool _canLandAt(Vector2 point) {
     final TerrainMap? map = terrain;
-    if (map != null && !capabilities.canTraverse(map.kindAt(point))) {
+    if (map != null &&
+        !capabilities.canTraverse(map.kindAt(point)) &&
+        !_enabledBridgeAt(point)) {
       return false;
     }
     if (!_fitsPassages(point)) {
@@ -344,6 +350,15 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
       }
     }
     return true;
+  }
+
+  bool _enabledBridgeAt(Vector2 point) {
+    for (final BridgeComponent bridge in bridges) {
+      if (bridge.isEnabled && bridge.containsWorldPoint(point)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   bool _fitsPassages(Vector2 point) {
