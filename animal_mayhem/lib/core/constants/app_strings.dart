@@ -15,6 +15,7 @@ abstract final class AppStrings {
   static const String jump = 'JUMP';
   static const String interact = 'INTERACT';
   static const String climb = 'CLIMB';
+  static const String coil = 'COIL';
   static const String execute = 'EXECUTE';
   static const String selectAnimalHint = 'Select an animal';
   static const String objective = 'Objective';

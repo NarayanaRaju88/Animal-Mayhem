@@ -342,6 +342,12 @@ void main() {
       expect(world.wideGate.isOpen, isTrue);
       expect(world.heavyPad.isActive, isTrue);
       expect(world.heavyGate.isOpen, isTrue);
+      expect(world.controller.objective.isComplete, isFalse);
+
+      world.snake.position.setFrom(world.coilAnchor.worldPosition);
+      expect(world.snake.startCoil(world.coilAnchor), isTrue);
+      world.coilGateLink.sync();
+      world.controller.objective.update();
       expect(world.controller.objective.isComplete, isTrue);
     });
   });
