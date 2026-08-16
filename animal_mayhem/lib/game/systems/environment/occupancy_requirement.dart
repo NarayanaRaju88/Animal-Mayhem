@@ -1,5 +1,6 @@
 import '../../components/animals/animal_component.dart';
 import '../abilities/ability_kind.dart';
+import 'force_capability.dart';
 
 /// Configuration for who may activate an occupancy-based object.
 abstract interface class OccupancyRequirement {
@@ -25,4 +26,15 @@ final class AbilityRequirement implements OccupancyRequirement {
 
   @override
   bool isSatisfiedBy(AnimalComponent animal) => animal.abilities.has(kind);
+}
+
+/// Matches animals whose force weight meets [minimum].
+final class WeightRequirement implements OccupancyRequirement {
+  const WeightRequirement(this.minimum);
+
+  final WeightClass minimum;
+
+  @override
+  bool isSatisfiedBy(AnimalComponent animal) =>
+      animal.force.weightClass.index >= minimum.index;
 }

@@ -207,7 +207,7 @@ void main() {
       world.duck.position.setValues(300, 300);
       world.dog.position.setValues(400, 400);
       world.frog.position.setValues(500, 500);
-      world.routeSwitch.interact();
+      world.lever.interact();
       world.controller.objective.update();
 
       world.reset();

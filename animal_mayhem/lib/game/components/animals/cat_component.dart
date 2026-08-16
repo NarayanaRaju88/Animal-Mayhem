@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 
 import '../../systems/abilities/animal_abilities.dart';
+import '../../systems/environment/force_capability.dart';
 import '../../systems/environment/movement_capabilities.dart';
 import '../../systems/environment/physical_profile.dart';
 import 'animal_attributes.dart';
@@ -14,6 +15,7 @@ class CatComponent extends AnimalComponent {
         speciesName: 'Cat',
         capabilities: MovementCapabilities.landOnly,
         abilities: AnimalAbilities.walkAndInteract,
+        force: ForceCapability.light,
         profile: const PhysicalProfile(bodyWidth: 34, bodyHeight: 26),
         attributes: AnimalAttributes(speed: 210, size: Vector2(34, 26)),
       );

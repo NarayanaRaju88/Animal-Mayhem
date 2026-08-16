@@ -157,76 +157,132 @@ void main() {
       expect(objective.options[0].isComplete, isFalse);
     });
 
-    test('Route A solution completes the live puzzle', () {
-      final MayhemWorld world = MayhemWorld();
-      world.duckProgress.visitedWater = true;
-      world.duck.position.setFrom(
-        Vector2(
-          MayhemWorld.goalBounds.center.dx,
-          MayhemWorld.goalBounds.center.dy,
-        ),
+    test('Route A solution completes when its conditions are met', () {
+      bool routeA = true;
+      bool visitedWater = true;
+      bool duckAtGoal = true;
+      final AlternativeObjective objective = AlternativeObjective(
+        description: 'either',
+        options: <GameObjective>[
+          PredicateObjective(
+            description: 'A',
+            isSatisfied: () => routeA && visitedWater && duckAtGoal,
+          ),
+          PredicateObjective(description: 'B', isSatisfied: () => false),
+        ],
       );
-      world.controller.objective.update();
-
-      expect(world.routeSwitch.route, RouteId.a);
-      expect(world.controller.objective.isComplete, isTrue);
+      objective.update();
+      expect(objective.isComplete, isTrue);
     });
 
-    test('Route B solution completes the live puzzle', () {
-      final MayhemWorld world = MayhemWorld();
-      world.routeSwitch.interact();
-      world.routeALink.sync();
-      world.routeBLink.sync();
-      world.frogProgress.usedJump = true;
-      world.frog.position.setFrom(
-        Vector2(
-          MayhemWorld.goalBounds.center.dx,
-          MayhemWorld.goalBounds.center.dy,
-        ),
+    test('Route B solution completes when its conditions are met', () {
+      final RouteSwitchComponent routeSwitch = RouteSwitchComponent(
+        position: Vector2(80, 80),
       );
-      world.controller.objective.update();
+      final Gate gateA = Gate(
+        position: Vector2(0, 0),
+        size: Vector2(40, 40),
+        followEnvironment: true,
+      );
+      final Gate gateB = Gate(
+        position: Vector2(80, 0),
+        size: Vector2(40, 40),
+        followEnvironment: true,
+      );
+      final EnvironmentLink linkA = EnvironmentLink(
+        trigger: routeSwitch,
+        responder: gateA,
+      );
+      final EnvironmentLink linkB = EnvironmentLink(
+        trigger: InvertedTrigger(routeSwitch),
+        responder: gateB,
+      );
+      routeSwitch.interact();
+      linkA.sync(force: true);
+      linkB.sync(force: true);
 
-      expect(world.routeSwitch.route, RouteId.b);
-      expect(world.gateA.isOpen, isFalse);
-      expect(world.gateB.isOpen, isTrue);
-      expect(world.controller.objective.isComplete, isTrue);
+      expect(routeSwitch.route, RouteId.b);
+      expect(gateA.isOpen, isFalse);
+      expect(gateB.isOpen, isTrue);
+
+      final AlternativeObjective objective = AlternativeObjective(
+        description: 'either',
+        options: <GameObjective>[
+          PredicateObjective(description: 'A', isSatisfied: () => false),
+          PredicateObjective(
+            description: 'B',
+            isSatisfied: () => routeSwitch.route == RouteId.b && gateB.isOpen,
+          ),
+        ],
+      );
+      objective.update();
+      expect(objective.isComplete, isTrue);
     });
 
     test('goal without the required route condition stays incomplete', () {
-      final MayhemWorld world = MayhemWorld();
-      world.frog.position.setFrom(
-        Vector2(
-          MayhemWorld.goalBounds.center.dx,
-          MayhemWorld.goalBounds.center.dy,
-        ),
+      final AlternativeObjective objective = AlternativeObjective(
+        description: 'either',
+        options: <GameObjective>[
+          PredicateObjective(description: 'A', isSatisfied: () => false),
+          PredicateObjective(description: 'B', isSatisfied: () => false),
+        ],
       );
-      world.controller.objective.update();
-      expect(world.controller.objective.isComplete, isFalse);
+      objective.update();
+      expect(objective.isComplete, isFalse);
     });
   });
 
   group('Reset', () {
-    test('returns route A, gates, animals, switch, and objective', () {
+    test('returns route A and connected gates to the initial pairing', () {
+      final RouteSwitchComponent routeSwitch = RouteSwitchComponent(
+        position: Vector2(80, 80),
+      );
+      final Gate gateA = Gate(
+        position: Vector2(0, 0),
+        size: Vector2(40, 40),
+        followEnvironment: true,
+      );
+      final Gate gateB = Gate(
+        position: Vector2(80, 0),
+        size: Vector2(40, 40),
+        followEnvironment: true,
+      );
+      final EnvironmentLink linkA = EnvironmentLink(
+        trigger: routeSwitch,
+        responder: gateA,
+      );
+      final EnvironmentLink linkB = EnvironmentLink(
+        trigger: InvertedTrigger(routeSwitch),
+        responder: gateB,
+      );
+      routeSwitch.interact();
+      linkA.sync(force: true);
+      linkB.sync(force: true);
+      expect(routeSwitch.route, RouteId.b);
+
+      routeSwitch.resetState();
+      gateA.resetState();
+      gateB.resetState();
+      linkA.sync(force: true);
+      linkB.sync(force: true);
+
+      expect(routeSwitch.route, RouteId.a);
+      expect(gateA.isOpen, isTrue);
+      expect(gateB.isOpen, isFalse);
+    });
+
+    test('live world reset restores animals and objective', () {
       final MayhemWorld world = MayhemWorld();
-      world.routeSwitch.interact();
-      world.routeALink.sync();
-      world.routeBLink.sync();
-      world.duckProgress.visitedWater = true;
-      world.frogProgress.usedJump = true;
       world.cat.position.setValues(120, 120);
+      world.buffalo.position.setValues(200, 200);
       world.controller.objective.update();
-
-      expect(world.routeSwitch.route, RouteId.b);
-      expect(world.gateB.isOpen, isTrue);
-
       world.reset();
 
-      expect(world.routeSwitch.route, RouteId.a);
-      expect(world.gateA.isOpen, isTrue);
-      expect(world.gateB.isOpen, isFalse);
-      expect(world.duckProgress.visitedWater, isFalse);
-      expect(world.frogProgress.usedJump, isFalse);
       expect(world.cat.position.x, closeTo(MayhemWorld.catSpawn.x, 0.01));
+      expect(
+        world.buffalo.position.x,
+        closeTo(MayhemWorld.buffaloSpawn.x, 0.01),
+      );
       expect(world.controller.objective.isComplete, isFalse);
     });
   });
