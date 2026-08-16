@@ -2,7 +2,7 @@ import '../../components/objects/bridge_component.dart';
 import 'game_objective.dart';
 import 'objective_status.dart';
 
-/// Completes once [bridge] is enabled.
+/// Completes once [bridge] is enabled, then latches until [reset].
 class BridgeEnabledObjective extends GameObjective {
   BridgeEnabledObjective({
     required this.bridge,

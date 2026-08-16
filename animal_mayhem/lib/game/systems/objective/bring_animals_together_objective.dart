@@ -2,7 +2,8 @@ import '../../components/animals/animal_component.dart';
 import 'game_objective.dart';
 import 'objective_status.dart';
 
-/// Completes when two animals are within [distance].
+/// Completes the first time two animals are within [distance], then latches
+/// until [reset].
 class BringAnimalsTogetherObjective extends GameObjective {
   BringAnimalsTogetherObjective({
     required this.first,

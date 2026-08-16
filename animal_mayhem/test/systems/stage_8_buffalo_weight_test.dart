@@ -1,3 +1,7 @@
+/// Category A: Buffalo/force history. Live MayhemWorld cases follow current
+/// Stage 10 composite rules (coil + climb), not a Stage-8-only objective.
+library;
+
 import 'dart:ui';
 
 import 'package:animal_mayhem/game/components/animals/animal_component.dart';

@@ -1,3 +1,7 @@
+/// Category A: Monkey/climb history. Live MayhemWorld cases follow current
+/// Stage 10 composite rules.
+library;
+
 import 'dart:ui';
 
 import 'package:animal_mayhem/game/components/animals/animal_component.dart';

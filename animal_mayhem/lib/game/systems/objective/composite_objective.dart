@@ -1,7 +1,7 @@
 import 'game_objective.dart';
 import 'objective_status.dart';
 
-/// Completes when every child objective is complete.
+/// Completes when every child objective is complete, then latches until [reset].
 class CompositeObjective extends GameObjective {
   CompositeObjective({required this.children, required this.description});
 
