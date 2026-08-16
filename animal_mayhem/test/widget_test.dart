@@ -16,6 +16,7 @@ void main() {
     expect(find.byType(MaterialApp), findsOneWidget);
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(find.text(AppStrings.appName), findsOneWidget);
+    expect(find.text(AppStrings.homeTagline), findsOneWidget);
     expect(find.widgetWithText(FilledButton, AppStrings.play), findsOneWidget);
   });
 
@@ -28,5 +29,12 @@ void main() {
 
     expect(find.byType(GameScreen), findsOneWidget);
     expect(find.byType(GameWidget<AnimalMayhemGame>), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text(AppStrings.gameScreenTitle),
+      ),
+      findsOneWidget,
+    );
   });
 }

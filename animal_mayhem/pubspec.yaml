@@ -1,5 +1,5 @@
 name: animal_mayhem
-description: Physics-based animal puzzle game built with Flutter and Flame.
+description: Playable 2D animal puzzle game prototype built with Flutter and Flame.
 publish_to: "none"
 version: 1.0.0+1
 

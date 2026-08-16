@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../core/constants/app_strings.dart';
 import '../components/animals/animal_component.dart';
 import '../components/environment/climbable_surface_component.dart';
 import '../components/objects/coil_anchor_component.dart';
@@ -9,6 +10,7 @@ import '../systems/behavior/climbable_target.dart';
 import '../systems/behavior/coilable_target.dart';
 import '../systems/behavior/follow_target.dart';
 import '../systems/behavior/interactable_target.dart';
+import '../systems/command/attempt_failure.dart';
 import '../systems/command/climb_command.dart';
 import '../systems/command/coil_command.dart';
 import '../systems/command/command_kind.dart';
@@ -43,7 +45,8 @@ class GameController extends ChangeNotifier {
   AnimalComponent? selectedAnimal;
   CommandKind? commandKind;
   FollowTarget? selectedTarget;
-  String targetDescription = 'None';
+  String targetDescription = AppStrings.none;
+  String? actionFeedback;
   bool _lastCanExecute = false;
   String _lastEnvironmentStatus = '';
 
@@ -53,28 +56,13 @@ class GameController extends ChangeNotifier {
     }
   }
 
+  /// Commands come from the selected animal's capabilities.
   List<CommandKind> get availableCommands {
     final AnimalComponent? animal = selectedAnimal;
     if (animal == null) {
       return const <CommandKind>[];
     }
-    return animal.availableCommands.where((CommandKind kind) {
-      if (kind == CommandKind.climb) {
-        final FollowTarget? target = selectedTarget;
-        if (target is! ClimbableTarget) {
-          return false;
-        }
-        return animal.canAttemptClimb(target.surface);
-      }
-      if (kind == CommandKind.coil) {
-        final FollowTarget? target = selectedTarget;
-        if (target is! CoilableTarget) {
-          return false;
-        }
-        return animal.canAttemptCoil(target.anchor);
-      }
-      return true;
-    }).toList();
+    return animal.availableCommands;
   }
 
   void handleAnimalTap(AnimalComponent animal) {
@@ -83,6 +71,7 @@ class GameController extends ChangeNotifier {
         !identical(animal, selectedAnimal)) {
       selectedTarget = AnimalTarget(animal);
       targetDescription = animal.speciesName;
+      actionFeedback = null;
     } else {
       _select(animal);
     }
@@ -96,46 +85,103 @@ class GameController extends ChangeNotifier {
     if (commandKind == CommandKind.interact ||
         commandKind == CommandKind.climb ||
         commandKind == CommandKind.coil) {
+      actionFeedback = AppStrings.wrongTarget;
+      notifyListeners();
       return;
     }
     selectedTarget = WorldPositionTarget(worldPosition);
     targetDescription = 'World';
+    if (commandKind == CommandKind.jump) {
+      actionFeedback = _messageFor(
+        CommandKind.jump,
+        selectedAnimal!.jumpFailure(worldPosition),
+      );
+    } else {
+      actionFeedback = null;
+    }
     notifyListeners();
   }
 
   void handleInteractableTap(Interactable interactable) {
-    if (selectedAnimal == null || commandKind == null) {
+    if (selectedAnimal == null) {
+      return;
+    }
+    if (commandKind == null) {
+      actionFeedback = AppStrings.selectCommandFirst;
+      notifyListeners();
       return;
     }
     if (commandKind == CommandKind.interact) {
       selectedTarget = InteractableTarget(interactable);
       targetDescription = interactable.label;
+      actionFeedback = _messageFor(
+        CommandKind.interact,
+        selectedAnimal!.interactFailure(interactable),
+      );
     } else if (commandKind == CommandKind.follow) {
       return;
+    } else if (commandKind == CommandKind.climb ||
+        commandKind == CommandKind.coil) {
+      actionFeedback = AppStrings.wrongTarget;
     } else {
       selectedTarget = WorldPositionTarget(interactable.worldPosition);
       targetDescription = 'World';
+      actionFeedback = null;
     }
     notifyListeners();
   }
 
   void handleClimbableTap(ClimbableSurfaceComponent surface) {
-    final AnimalComponent? animal = selectedAnimal;
-    if (animal == null || !animal.hasClimbAbility) {
+    if (selectedAnimal == null) {
       return;
     }
-    selectedTarget = ClimbableTarget(surface);
-    targetDescription = surface.label;
+    if (commandKind == null) {
+      actionFeedback = AppStrings.selectCommandFirst;
+      notifyListeners();
+      return;
+    }
+    if (commandKind == CommandKind.climb) {
+      selectedTarget = ClimbableTarget(surface);
+      targetDescription = surface.label;
+      actionFeedback = _messageFor(
+        CommandKind.climb,
+        selectedAnimal!.climbFailure(surface),
+      );
+    } else if (commandKind == CommandKind.move ||
+        commandKind == CommandKind.jump) {
+      selectedTarget = WorldPositionTarget(surface.worldPosition);
+      targetDescription = 'World';
+      actionFeedback = null;
+    } else {
+      actionFeedback = AppStrings.wrongTarget;
+    }
     notifyListeners();
   }
 
   void handleCoilAnchorTap(CoilAnchorComponent anchor) {
-    final AnimalComponent? animal = selectedAnimal;
-    if (animal == null || !animal.hasCoilAbility) {
+    if (selectedAnimal == null) {
       return;
     }
-    selectedTarget = CoilableTarget(anchor);
-    targetDescription = anchor.label;
+    if (commandKind == null) {
+      actionFeedback = AppStrings.selectCommandFirst;
+      notifyListeners();
+      return;
+    }
+    if (commandKind == CommandKind.coil) {
+      selectedTarget = CoilableTarget(anchor);
+      targetDescription = anchor.label;
+      actionFeedback = _messageFor(
+        CommandKind.coil,
+        selectedAnimal!.coilFailure(anchor),
+      );
+    } else if (commandKind == CommandKind.move ||
+        commandKind == CommandKind.jump) {
+      selectedTarget = WorldPositionTarget(anchor.worldPosition);
+      targetDescription = 'World';
+      actionFeedback = null;
+    } else {
+      actionFeedback = AppStrings.wrongTarget;
+    }
     notifyListeners();
   }
 
@@ -143,17 +189,10 @@ class GameController extends ChangeNotifier {
     if (!availableCommands.contains(kind)) {
       return;
     }
-    final FollowTarget? previousTarget = selectedTarget;
-    final String previousDescription = targetDescription;
     commandKind = kind;
-    if ((kind == CommandKind.climb && previousTarget is ClimbableTarget) ||
-        (kind == CommandKind.coil && previousTarget is CoilableTarget)) {
-      selectedTarget = previousTarget;
-      targetDescription = previousDescription;
-    } else {
-      selectedTarget = null;
-      targetDescription = 'None';
-    }
+    selectedTarget = null;
+    targetDescription = AppStrings.none;
+    actionFeedback = null;
     notifyListeners();
   }
 
@@ -161,13 +200,19 @@ class GameController extends ChangeNotifier {
     final AnimalComponent? actor = selectedAnimal;
     final CommandKind? kind = commandKind;
     final FollowTarget? target = selectedTarget;
-    if (actor == null || kind == null || target == null) {
+    if (actor == null || kind == null) {
+      actionFeedback = AppStrings.actionUnavailable;
+      notifyListeners();
       return;
     }
     if (!actor.availableCommands.contains(kind)) {
+      actionFeedback = AppStrings.requiresDifferentCapability;
+      notifyListeners();
       return;
     }
-    if (!canExecute) {
+    if (target == null) {
+      actionFeedback = AppStrings.actionUnavailable;
+      notifyListeners();
       return;
     }
 
@@ -176,6 +221,7 @@ class GameController extends ChangeNotifier {
         commands.start(
           MoveCommand(actor: actor, destination: target.worldPosition),
         );
+        actionFeedback = null;
       case CommandKind.follow:
         commands.start(
           FollowCommand(
@@ -184,22 +230,60 @@ class GameController extends ChangeNotifier {
             followDistance: actor.attributes.followDistance,
           ),
         );
+        actionFeedback = null;
       case CommandKind.jump:
+        final AttemptFailure jump = actor.jumpFailure(target.worldPosition);
+        if (jump != AttemptFailure.none) {
+          actionFeedback = _messageFor(kind, jump);
+          notifyListeners();
+          return;
+        }
         commands.start(
           JumpCommand(actor: actor, destination: target.worldPosition),
         );
+        actionFeedback = null;
       case CommandKind.interact:
-        if (target is InteractableTarget) {
-          commands.start(InteractCommand(actor: actor, target: target.object));
+        if (target is! InteractableTarget) {
+          actionFeedback = AppStrings.wrongTarget;
+          notifyListeners();
+          return;
         }
+        final AttemptFailure interact = actor.interactFailure(target.object);
+        if (interact != AttemptFailure.none) {
+          actionFeedback = _messageFor(kind, interact);
+          notifyListeners();
+          return;
+        }
+        commands.start(InteractCommand(actor: actor, target: target.object));
+        actionFeedback = null;
       case CommandKind.climb:
-        if (target is ClimbableTarget) {
-          commands.start(ClimbCommand(actor: actor, surface: target.surface));
+        if (target is! ClimbableTarget) {
+          actionFeedback = AppStrings.wrongTarget;
+          notifyListeners();
+          return;
         }
+        final AttemptFailure climb = actor.climbFailure(target.surface);
+        if (climb != AttemptFailure.none) {
+          actionFeedback = _messageFor(kind, climb);
+          notifyListeners();
+          return;
+        }
+        commands.start(ClimbCommand(actor: actor, surface: target.surface));
+        actionFeedback = null;
       case CommandKind.coil:
-        if (target is CoilableTarget) {
-          commands.start(CoilCommand(actor: actor, anchor: target.anchor));
+        if (target is! CoilableTarget) {
+          actionFeedback = AppStrings.wrongTarget;
+          notifyListeners();
+          return;
         }
+        final AttemptFailure coil = actor.coilFailure(target.anchor);
+        if (coil != AttemptFailure.none) {
+          actionFeedback = _messageFor(kind, coil);
+          notifyListeners();
+          return;
+        }
+        commands.start(CoilCommand(actor: actor, anchor: target.anchor));
+        actionFeedback = null;
     }
     notifyListeners();
   }
@@ -236,7 +320,8 @@ class GameController extends ChangeNotifier {
     selectedAnimal = null;
     commandKind = null;
     selectedTarget = null;
-    targetDescription = 'None';
+    targetDescription = AppStrings.none;
+    actionFeedback = null;
     _lastCanExecute = false;
     _lastEnvironmentStatus = '';
     notifyListeners();
@@ -270,7 +355,39 @@ class GameController extends ChangeNotifier {
     return true;
   }
 
-  String get selectedLabel => selectedAnimal?.speciesName ?? 'None';
+  String get selectedLabel => selectedAnimal?.speciesName ?? AppStrings.none;
+
+  String get commandDescription {
+    switch (commandKind) {
+      case CommandKind.move:
+        return AppStrings.move;
+      case CommandKind.follow:
+        return AppStrings.follow;
+      case CommandKind.jump:
+        return AppStrings.jump;
+      case CommandKind.interact:
+        return AppStrings.interact;
+      case CommandKind.climb:
+        return AppStrings.climb;
+      case CommandKind.coil:
+        return AppStrings.coil;
+      case null:
+        return AppStrings.none;
+    }
+  }
+
+  String get interactionHint {
+    if (selectedAnimal == null) {
+      return AppStrings.selectAnimalHint;
+    }
+    if (commandKind == null) {
+      return AppStrings.selectCommandHint;
+    }
+    if (selectedTarget == null) {
+      return AppStrings.selectTargetHint;
+    }
+    return '';
+  }
 
   String get objectiveLabel =>
       objective.isComplete ? 'Complete' : objective.description;
@@ -300,6 +417,30 @@ class GameController extends ChangeNotifier {
       commandKind = null;
     }
     selectedTarget = null;
-    targetDescription = 'None';
+    targetDescription = AppStrings.none;
+    actionFeedback = null;
+  }
+
+  String? _messageFor(CommandKind kind, AttemptFailure failure) {
+    switch (failure) {
+      case AttemptFailure.none:
+        return null;
+      case AttemptFailure.missingCapability:
+        return AppStrings.requiresDifferentCapability;
+      case AttemptFailure.busy:
+        return AppStrings.actionUnavailable;
+      case AttemptFailure.incompatible:
+        if (kind == CommandKind.climb) {
+          return AppStrings.cannotClimbHere;
+        }
+        if (kind == CommandKind.coil) {
+          return AppStrings.cannotCoilHere;
+        }
+        return AppStrings.wrongTarget;
+      case AttemptFailure.outOfRange:
+        return AppStrings.outOfRange;
+      case AttemptFailure.pathBlocked:
+        return AppStrings.pathBlocked;
+    }
   }
 }

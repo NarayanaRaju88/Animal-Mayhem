@@ -4,7 +4,7 @@ import '../../core/constants/app_strings.dart';
 import '../../game/session/game_controller.dart';
 import '../../game/systems/command/command_kind.dart';
 
-/// Development-only command panel. Contains no animal movement logic.
+/// Command panel. Contains no animal movement logic.
 class DevelopmentCommandBar extends StatelessWidget {
   const DevelopmentCommandBar({
     super.key,
@@ -19,6 +19,7 @@ class DevelopmentCommandBar extends StatelessWidget {
   static const Key climbButtonKey = Key('command_climb_button');
   static const Key coilButtonKey = Key('command_coil_button');
   static const Key executeButtonKey = Key('command_execute_button');
+  static const Key feedbackKey = Key('action_feedback');
 
   final GameController controller;
   final VoidCallback onReset;
@@ -88,9 +89,22 @@ class DevelopmentCommandBar extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '${AppStrings.selected}: ${controller.selectedLabel}   '
+                '${AppStrings.command}: ${controller.commandDescription}   '
                 '${AppStrings.target}: ${controller.targetDescription}',
                 style: textTheme.bodyMedium,
               ),
+              if (controller.interactionHint.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 4),
+                Text(controller.interactionHint, style: textTheme.bodySmall),
+              ],
+              if (controller.actionFeedback != null) ...<Widget>[
+                const SizedBox(height: 4),
+                Text(
+                  controller.actionFeedback!,
+                  key: DevelopmentCommandBar.feedbackKey,
+                  style: textTheme.bodyMedium?.copyWith(color: colors.error),
+                ),
+              ],
               const SizedBox(height: 8),
               if (commands.isEmpty)
                 Text(AppStrings.selectAnimalHint, style: textTheme.bodyMedium)
