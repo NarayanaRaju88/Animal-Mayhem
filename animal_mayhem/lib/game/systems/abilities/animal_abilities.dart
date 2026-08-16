@@ -18,6 +18,11 @@ final class AnimalAbilities {
     <AbilityKind>{AbilityKind.walk, AbilityKind.swim, AbilityKind.jump},
   );
 
+  static const AnimalAbilities walkAndInteract = AnimalAbilities(<AbilityKind>{
+    AbilityKind.walk,
+    AbilityKind.interact,
+  });
+
   final Set<AbilityKind> kinds;
 
   bool has(AbilityKind kind) => kinds.contains(kind);
@@ -31,6 +36,9 @@ final class AnimalAbilities {
     }
     if (has(AbilityKind.jump)) {
       commands.add(CommandKind.jump);
+    }
+    if (has(AbilityKind.interact)) {
+      commands.add(CommandKind.interact);
     }
     return commands;
   }

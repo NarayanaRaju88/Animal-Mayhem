@@ -12,8 +12,11 @@ import '../../systems/abilities/jump_motion.dart';
 import '../../systems/behavior/follow_target.dart';
 import '../../systems/command/command_kind.dart';
 import '../../systems/environment/movement_capabilities.dart';
+import '../../systems/environment/physical_profile.dart';
 import '../../systems/environment/terrain_kind.dart';
 import '../../systems/environment/terrain_map.dart';
+import '../../systems/interaction/interactable.dart';
+import '../environment/narrow_passage.dart';
 import '../objects/obstacle_component.dart';
 import 'animal_attributes.dart';
 import 'animal_state.dart';
@@ -31,10 +34,17 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     this.capabilities = MovementCapabilities.landOnly,
     this.abilities = AnimalAbilities.walk,
     this.jumpAbility,
+    PhysicalProfile? profile,
     this.terrain,
     this.onTapped,
     Vector2? position,
-  }) : super(
+  }) : profile =
+           profile ??
+           PhysicalProfile.fromSize(
+             width: attributes.size.x,
+             height: attributes.size.y,
+           ),
+       super(
          position: position?.clone() ?? Vector2.zero(),
          size: attributes.size.clone(),
          anchor: Anchor.center,
@@ -42,12 +52,14 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
        );
 
   final AnimalAttributes attributes;
+  final PhysicalProfile profile;
   final String speciesName;
   final MovementCapabilities capabilities;
   final AnimalAbilities abilities;
   final JumpAbility? jumpAbility;
   TerrainMap? terrain;
   List<ObstacleComponent> obstacles = <ObstacleComponent>[];
+  List<NarrowPassage> passages = <NarrowPassage>[];
   void Function(AnimalComponent animal)? onTapped;
   Rect worldBounds;
 
@@ -74,6 +86,25 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
       abilities.has(AbilityKind.jump) && jumpAbility != null;
 
   List<CommandKind> get availableCommands => abilities.availableCommands;
+
+  bool canAttemptInteraction(Interactable object) {
+    if (!abilities.has(AbilityKind.interact)) {
+      return false;
+    }
+    if (!object.canInteract) {
+      return false;
+    }
+    return object.worldPosition.distanceTo(position) <= object.interactionRange;
+  }
+
+  /// Uses [object] when the animal has the interact ability and is in range.
+  bool interactWith(Interactable object) {
+    if (!canAttemptInteraction(object)) {
+      return false;
+    }
+    object.interact();
+    return true;
+  }
 
   /// Moves toward a fixed world point. Clamped to the playable inner bounds.
   void moveTo(Vector2 worldPosition) {
@@ -172,6 +203,9 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   bool canOccupy(Vector2 point) {
     final TerrainMap? map = terrain;
     if (map != null && !capabilities.canTraverse(map.kindAt(point))) {
+      return false;
+    }
+    if (!_fitsPassages(point)) {
       return false;
     }
     if (isJumping) {
@@ -295,6 +329,9 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     if (map != null && !capabilities.canTraverse(map.kindAt(point))) {
       return false;
     }
+    if (!_fitsPassages(point)) {
+      return false;
+    }
     return !_blockedByObstacle(point, allowJumpable: false);
   }
 
@@ -303,6 +340,15 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
       final double t = i / 9;
       final Vector2 sample = position + (destination - position) * t;
       if (_blockedByObstacle(sample, allowJumpable: true)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _fitsPassages(Vector2 point) {
+    for (final NarrowPassage passage in passages) {
+      if (passage.containsWorldPoint(point) && !passage.allows(profile)) {
         return false;
       }
     }
