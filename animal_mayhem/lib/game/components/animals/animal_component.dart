@@ -9,6 +9,7 @@ import '../../systems/abilities/ability_kind.dart';
 import '../../systems/abilities/animal_abilities.dart';
 import '../../systems/abilities/climb_capability.dart';
 import '../../systems/abilities/climb_motion.dart';
+import '../../systems/abilities/coil_capability.dart';
 import '../../systems/abilities/jump_ability.dart';
 import '../../systems/abilities/jump_motion.dart';
 import '../../systems/behavior/follow_target.dart';
@@ -23,6 +24,7 @@ import '../../systems/interaction/interactable.dart';
 import '../environment/climbable_surface_component.dart';
 import '../environment/narrow_passage.dart';
 import '../objects/bridge_component.dart';
+import '../objects/coil_anchor_component.dart';
 import '../objects/gate.dart';
 import '../objects/obstacle_component.dart';
 import '../objects/pushable_component.dart';
@@ -44,6 +46,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     this.force = ForceCapability.medium,
     this.jumpAbility,
     this.climbAbility,
+    this.coilAbility,
     PhysicalProfile? profile,
     this.terrain,
     this.onTapped,
@@ -69,6 +72,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   final ForceCapability force;
   final JumpAbility? jumpAbility;
   final ClimbCapability? climbAbility;
+  final CoilCapability? coilAbility;
   TerrainMap? terrain;
   List<ObstacleComponent> obstacles = <ObstacleComponent>[];
   List<NarrowPassage> passages = <NarrowPassage>[];
@@ -87,6 +91,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   JumpMotion? _jump;
   ClimbMotion? _climb;
   bool hasCompletedClimb = false;
+  bool hasCompletedCoil = false;
   double _landingTimer = 0;
   late final SelectionRing _selectionRing = SelectionRing(ownerSize: size);
 
@@ -105,6 +110,9 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
 
   bool get hasClimbAbility =>
       abilities.has(AbilityKind.climb) && climbAbility != null;
+
+  bool get hasCoilAbility =>
+      abilities.has(AbilityKind.coil) && coilAbility != null;
 
   HeightLevel get heightLevel => HeightLevel.fromY(position.y);
 
@@ -220,6 +228,35 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     return true;
   }
 
+  bool canAttemptCoil(CoilAnchorComponent anchor) {
+    if (!hasCoilAbility || isClimbing || isJumping) {
+      return false;
+    }
+    if (!anchor.canBeUsedBy(this)) {
+      return false;
+    }
+    if (!_isWithinCoilRange(anchor)) {
+      return false;
+    }
+    return _coilRouteIsClear(anchor);
+  }
+
+  /// Holds [anchor] when the animal can coil. Returns false otherwise.
+  bool startCoil(CoilAnchorComponent anchor) {
+    if (!canAttemptCoil(anchor)) {
+      return false;
+    }
+    if (!anchor.hold(this)) {
+      return false;
+    }
+    target = null;
+    _followMode = false;
+    velocity.setZero();
+    hasCompletedCoil = true;
+    state = AnimalState.idle;
+    return true;
+  }
+
   void clearTarget() {
     _cancelJump();
     _cancelClimb();
@@ -235,6 +272,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     _cancelClimb();
     _landingTimer = 0;
     hasCompletedClimb = false;
+    hasCompletedCoil = false;
     position.setFrom(clampToInnerBounds(spawn));
     angle = 0;
     isSelected = false;
@@ -445,6 +483,32 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
       return false;
     }
     final Vector2 end = surface.climbDestination;
+    for (int i = 1; i <= 8; i++) {
+      final double t = i / 9;
+      final Vector2 sample = position + (end - position) * t;
+      for (final ObstacleComponent obstacle in obstacles) {
+        if (obstacle is Gate && obstacle.containsWorldPoint(sample)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  bool _isWithinCoilRange(CoilAnchorComponent anchor) {
+    final CoilCapability? ability = coilAbility;
+    if (ability == null) {
+      return false;
+    }
+    final double range = math.min(ability.range, anchor.coilRange);
+    return position.distanceTo(anchor.worldPosition) <= range;
+  }
+
+  bool _coilRouteIsClear(CoilAnchorComponent anchor) {
+    if (!anchor.isEnabled) {
+      return false;
+    }
+    final Vector2 end = anchor.worldPosition;
     for (int i = 1; i <= 8; i++) {
       final double t = i / 9;
       final Vector2 sample = position + (end - position) * t;

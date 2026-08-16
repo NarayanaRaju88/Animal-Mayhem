@@ -9,11 +9,13 @@ import '../components/animals/dog_component.dart';
 import '../components/animals/duck_component.dart';
 import '../components/animals/frog_component.dart';
 import '../components/animals/monkey_component.dart';
+import '../components/animals/snake_component.dart';
 import '../components/environment/climbable_surface_component.dart';
 import '../components/environment/development_play_area.dart';
 import '../components/environment/narrow_passage.dart';
 import '../components/environment/platform_component.dart';
 import '../components/environment/water_region.dart';
+import '../components/objects/coil_anchor_component.dart';
 import '../components/objects/gate.dart';
 import '../components/objects/goal_zone.dart';
 import '../components/objects/heavy_pressure_pad_component.dart';
@@ -35,11 +37,11 @@ import '../systems/objective/gate_open_objective.dart';
 import '../systems/objective/predicate_objective.dart';
 import '../systems/objective/pressure_pad_active_objective.dart';
 
-/// Stage 9 development puzzle.
+/// Stage 10 development puzzle.
 ///
-/// Cat uses the narrow alley and lever to open a wide gate. Buffalo (too large
-/// for the alley) pushes a crate aside, then stands on a heavy pad to open the
-/// heavy gate. Monkey walks through and climbs to the upper platform goal.
+/// Cat uses the narrow alley and lever to open a wide gate. Buffalo pushes a
+/// crate and holds a heavy pad to open the heavy gate. Snake coils on an
+/// anchor to hold a persistent gate. Monkey climbs to the upper platform goal.
 class MayhemWorld extends World {
   MayhemWorld()
     : terrain = TerrainMap(
@@ -69,6 +71,10 @@ class MayhemWorld extends World {
       monkey = MonkeyComponent(
         worldBounds: MayhemWorld.bounds,
         position: MayhemWorld.monkeySpawn,
+      ),
+      snake = SnakeComponent(
+        worldBounds: MayhemWorld.bounds,
+        position: MayhemWorld.snakeSpawn,
       ),
       upperPlatform = PlatformComponent(
         position: Vector2(860, 16),
@@ -126,6 +132,15 @@ class MayhemWorld extends World {
         position: MayhemWorld.crateSpawn,
         size: MayhemWorld.crateSize,
       ),
+      coilGate = Gate(
+        position: Vector2(900, 600),
+        size: Vector2(280, 40),
+        followEnvironment: true,
+      ),
+      coilAnchor = CoilAnchorComponent(
+        position: MayhemWorld.coilAnchorPosition,
+        size: MayhemWorld.coilAnchorSize,
+      ),
       heavyPad = HeavyPressurePadComponent(
         position: MayhemWorld.padPosition,
         size: MayhemWorld.padSize,
@@ -143,6 +158,7 @@ class MayhemWorld extends World {
       eastWall,
       lowerWestWall,
       wideGate,
+      coilGate,
       lowerEastWall,
       lowerFarWall,
       crate,
@@ -157,6 +173,7 @@ class MayhemWorld extends World {
       cat,
       buffalo,
       monkey,
+      snake,
     ];
     for (final AnimalComponent animal in roster) {
       animal.terrain = terrain;
@@ -168,6 +185,8 @@ class MayhemWorld extends World {
     lever.onActivated = wideGate.open;
     padGateLink = EnvironmentLink(trigger: heavyPad, responder: heavyGate);
     padGateLink.sync(force: true);
+    coilGateLink = EnvironmentLink(trigger: coilAnchor, responder: coilGate);
+    coilGateLink.sync(force: true);
     controller = GameController(
       animals: roster,
       spawns: <AnimalComponent, Vector2>{
@@ -177,9 +196,11 @@ class MayhemWorld extends World {
         cat: MayhemWorld.catSpawn,
         buffalo: MayhemWorld.buffaloSpawn,
         monkey: MayhemWorld.monkeySpawn,
+        snake: MayhemWorld.snakeSpawn,
       },
       objective: CompositeObjective(
-        description: 'Cat opens the way, Buffalo clears a path, Monkey climbs to the Goal',
+        description:
+            'Cat, Buffalo, Snake, and Monkey complete the vertical route',
         children: <GameObjective>[
           PredicateObjective(
             description: 'Activate the lever',
@@ -195,6 +216,11 @@ class MayhemWorld extends World {
             pad: heavyPad,
             description: 'Hold the heavy pad',
           ),
+          PredicateObjective(
+            description: 'Coil the anchor',
+            isSatisfied: () => snake.hasCompletedCoil && coilAnchor.isCoiled,
+          ),
+          GateOpenObjective(gate: coilGate, description: 'Hold the coil gate'),
           PredicateObjective(
             description: 'Climb to the upper platform',
             isSatisfied: () => monkey.hasCompletedClimb,
@@ -212,15 +238,19 @@ class MayhemWorld extends World {
         heavyPad,
         crate,
         climbable,
+        coilAnchor,
+        coilGate,
       ],
       environmentStatus: () =>
           'Wide: ${wideGate.isOpen ? 'OPEN' : 'CLOSED'}  '
           'Heavy: ${heavyGate.isOpen ? 'OPEN' : 'CLOSED'}  '
-          'Pad: ${heavyPad.isActive ? 'ACTIVE' : 'INACTIVE'}',
+          'Pad: ${heavyPad.isActive ? 'ACTIVE' : 'INACTIVE'}  '
+          'Coil: ${coilAnchor.isCoiled ? 'HELD' : 'OPEN'}',
     )..bindInput();
     lilyPad.onTapped = controller.handleWorldTap;
     lever.onTapped = controller.handleInteractableTap;
     climbable.onTapped = controller.handleClimbableTap;
+    coilAnchor.onTapped = controller.handleCoilAnchorTap;
   }
 
   static final Vector2 size = Vector2(1400, 2200);
@@ -255,6 +285,12 @@ class MayhemWorld extends World {
 
   static Vector2 get monkeySpawn => Vector2(1100, 1500);
 
+  static Vector2 get snakeSpawn => Vector2(950, 1520);
+
+  static Vector2 get coilAnchorPosition => Vector2(1080, 880);
+
+  static Vector2 get coilAnchorSize => Vector2(80, 80);
+
   static Vector2 get lilyPadPosition => Vector2(250, 1140);
 
   static Vector2 get climbablePosition => Vector2(1020, 100);
@@ -270,6 +306,7 @@ class MayhemWorld extends World {
   final CatComponent cat;
   final BuffaloComponent buffalo;
   final MonkeyComponent monkey;
+  final SnakeComponent snake;
   final PlatformComponent upperPlatform;
   final PlatformComponent lowerPlatform;
   final NormalBarrier sealWall;
@@ -284,11 +321,14 @@ class MayhemWorld extends World {
   final NormalBarrier lowerEastWall;
   final NormalBarrier lowerFarWall;
   final PushableComponent crate;
+  final Gate coilGate;
+  final CoilAnchorComponent coilAnchor;
   final HeavyPressurePadComponent heavyPad;
   final LilyPadComponent lilyPad;
   final GoalZone goal;
   final LeverComponent lever;
   late final EnvironmentLink padGateLink;
+  late final EnvironmentLink coilGateLink;
   late final GameController controller;
 
   TargetMarker? _targetMarker;
@@ -315,6 +355,8 @@ class MayhemWorld extends World {
     await add(eastWall);
     await add(lowerWestWall);
     await add(wideGate);
+    await add(coilGate);
+    await add(coilAnchor);
     await add(lowerEastWall);
     await add(lowerFarWall);
     await add(crate);
@@ -327,6 +369,7 @@ class MayhemWorld extends World {
     await add(cat);
     await add(buffalo);
     await add(monkey);
+    await add(snake);
   }
 
   @override
@@ -334,8 +377,10 @@ class MayhemWorld extends World {
     super.update(dt);
     heavyPad.refresh();
     padGateLink.sync();
+    coilGateLink.sync();
     controller.tick(dt);
     padGateLink.sync();
+    coilGateLink.sync();
     _syncTargetMarker();
   }
 
@@ -343,6 +388,7 @@ class MayhemWorld extends World {
     controller.reset();
     heavyPad.refresh();
     padGateLink.sync(force: true);
+    coilGateLink.sync(force: true);
     _clearMarker();
   }
 

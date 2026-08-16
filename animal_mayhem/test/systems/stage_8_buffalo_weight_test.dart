@@ -204,6 +204,16 @@ void main() {
         ),
       );
       world.controller.objective.update();
+      expect(
+        world.controller.objective.isComplete,
+        isFalse,
+        reason: 'Stage 10 requires Snake coil in addition to the monkey climb',
+      );
+
+      world.snake.position.setFrom(world.coilAnchor.worldPosition);
+      expect(world.snake.startCoil(world.coilAnchor), isTrue);
+      world.coilGateLink.sync();
+      world.controller.objective.update();
       expect(world.controller.objective.isComplete, isTrue);
     });
   });

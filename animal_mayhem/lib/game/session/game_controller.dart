@@ -3,11 +3,14 @@ import 'package:flutter/foundation.dart';
 
 import '../components/animals/animal_component.dart';
 import '../components/environment/climbable_surface_component.dart';
+import '../components/objects/coil_anchor_component.dart';
 import '../systems/behavior/animal_target.dart';
 import '../systems/behavior/climbable_target.dart';
+import '../systems/behavior/coilable_target.dart';
 import '../systems/behavior/follow_target.dart';
 import '../systems/behavior/interactable_target.dart';
 import '../systems/command/climb_command.dart';
+import '../systems/command/coil_command.dart';
 import '../systems/command/command_kind.dart';
 import '../systems/command/command_runner.dart';
 import '../systems/command/follow_command.dart';
@@ -56,14 +59,21 @@ class GameController extends ChangeNotifier {
       return const <CommandKind>[];
     }
     return animal.availableCommands.where((CommandKind kind) {
-      if (kind != CommandKind.climb) {
-        return true;
+      if (kind == CommandKind.climb) {
+        final FollowTarget? target = selectedTarget;
+        if (target is! ClimbableTarget) {
+          return false;
+        }
+        return animal.canAttemptClimb(target.surface);
       }
-      final FollowTarget? target = selectedTarget;
-      if (target is! ClimbableTarget) {
-        return false;
+      if (kind == CommandKind.coil) {
+        final FollowTarget? target = selectedTarget;
+        if (target is! CoilableTarget) {
+          return false;
+        }
+        return animal.canAttemptCoil(target.anchor);
       }
-      return animal.canAttemptClimb(target.surface);
+      return true;
     }).toList();
   }
 
@@ -84,7 +94,8 @@ class GameController extends ChangeNotifier {
       return;
     }
     if (commandKind == CommandKind.interact ||
-        commandKind == CommandKind.climb) {
+        commandKind == CommandKind.climb ||
+        commandKind == CommandKind.coil) {
       return;
     }
     selectedTarget = WorldPositionTarget(worldPosition);
@@ -118,6 +129,16 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void handleCoilAnchorTap(CoilAnchorComponent anchor) {
+    final AnimalComponent? animal = selectedAnimal;
+    if (animal == null || !animal.hasCoilAbility) {
+      return;
+    }
+    selectedTarget = CoilableTarget(anchor);
+    targetDescription = anchor.label;
+    notifyListeners();
+  }
+
   void chooseCommand(CommandKind kind) {
     if (!availableCommands.contains(kind)) {
       return;
@@ -125,7 +146,8 @@ class GameController extends ChangeNotifier {
     final FollowTarget? previousTarget = selectedTarget;
     final String previousDescription = targetDescription;
     commandKind = kind;
-    if (kind == CommandKind.climb && previousTarget is ClimbableTarget) {
+    if ((kind == CommandKind.climb && previousTarget is ClimbableTarget) ||
+        (kind == CommandKind.coil && previousTarget is CoilableTarget)) {
       selectedTarget = previousTarget;
       targetDescription = previousDescription;
     } else {
@@ -173,6 +195,10 @@ class GameController extends ChangeNotifier {
       case CommandKind.climb:
         if (target is ClimbableTarget) {
           commands.start(ClimbCommand(actor: actor, surface: target.surface));
+        }
+      case CommandKind.coil:
+        if (target is CoilableTarget) {
+          commands.start(CoilCommand(actor: actor, anchor: target.anchor));
         }
     }
     notifyListeners();
@@ -234,6 +260,12 @@ class GameController extends ChangeNotifier {
         return false;
       }
       return actor.canAttemptClimb(target.surface);
+    }
+    if (kind == CommandKind.coil) {
+      if (target is! CoilableTarget) {
+        return false;
+      }
+      return actor.canAttemptCoil(target.anchor);
     }
     return true;
   }
