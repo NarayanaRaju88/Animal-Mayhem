@@ -66,5 +66,16 @@ class PressurePadComponent extends PositionComponent
       ),
       Paint()..color = _active ? activeColor : inactiveColor,
     );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.x / 2, size.y / 2),
+        width: size.x * 0.42,
+        height: size.y * 0.32,
+      ),
+      Paint()
+        ..color = const Color(0x44FFFFFF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
   }
 }

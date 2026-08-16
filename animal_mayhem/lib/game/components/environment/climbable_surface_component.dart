@@ -77,13 +77,19 @@ class ClimbableSurfaceComponent extends PositionComponent
     for (double y = 12; y < size.y; y += 22) {
       canvas.drawLine(Offset(6, y), Offset(size.x - 6, y), rung);
     }
-    final Paragraph paragraph = (ParagraphBuilder(
-      ParagraphStyle(
-        textAlign: TextAlign.center,
-        fontSize: 9,
-        fontWeight: FontWeight.w700,
-      ),
-    )..addText('CLIMB')).build()..layout(ParagraphConstraints(width: size.x));
-    canvas.drawParagraph(paragraph, Offset(0, size.y / 2 - 6));
+    canvas.drawLine(
+      Offset(8, 4),
+      Offset(8, size.y - 4),
+      Paint()
+        ..color = const Color(0xFF3A2416)
+        ..strokeWidth = 5,
+    );
+    canvas.drawLine(
+      Offset(size.x - 8, 4),
+      Offset(size.x - 8, size.y - 4),
+      Paint()
+        ..color = const Color(0xFF3A2416)
+        ..strokeWidth = 5,
+    );
   }
 }

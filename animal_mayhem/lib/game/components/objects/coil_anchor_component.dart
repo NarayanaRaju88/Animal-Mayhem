@@ -86,15 +86,11 @@ class CoilAnchorComponent extends PositionComponent
         Paint()..color = const Color(0xFFD7C48A),
       );
     }
-    final Paragraph paragraph =
-        (ParagraphBuilder(
-            ParagraphStyle(
-              textAlign: TextAlign.center,
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-            ),
-          )..addText(isCoiled ? 'HELD' : 'COIL')).build()
-          ..layout(ParagraphConstraints(width: size.x));
-    canvas.drawParagraph(paragraph, Offset(0, size.y / 2 - 6));
+    final Paint coil = Paint()
+      ..color = const Color(0xFFD7C48A)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+    canvas.drawCircle(Offset(size.x / 2, size.y / 2), size.x * 0.18, coil);
+    canvas.drawCircle(Offset(size.x / 2, size.y / 2), size.x * 0.28, coil);
   }
 }

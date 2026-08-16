@@ -39,5 +39,12 @@ class LilyPadComponent extends PositionComponent with TapCallbacks {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3,
     );
+    canvas.drawLine(
+      Offset(center.dx, 8),
+      Offset(size.x - 6, center.dy),
+      Paint()
+        ..color = rimColor
+        ..strokeWidth = 3,
+    );
   }
 }

@@ -54,16 +54,34 @@ class Gate extends ObstacleComponent
 
   @override
   void render(Canvas canvas) {
+    if (isOpen) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, 10, size.y),
+        Paint()..color = openColor,
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(size.x - 10, 0, 10, size.y),
+        Paint()..color = openColor,
+      );
+      return;
+    }
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(size.toRect(), const Radius.circular(4)),
+      Paint()..color = closedColor,
+    );
+    final Paint bar = Paint()
+      ..color = const Color(0xFFD7C48A)
+      ..strokeWidth = 4;
+    for (double x = 12; x < size.x - 8; x += 16) {
+      canvas.drawLine(Offset(x, 6), Offset(x, size.y - 6), bar);
+    }
     canvas.drawRect(
-      size.toRect(),
-      Paint()..color = isOpen ? openColor : closedColor,
+      Rect.fromLTWH(0, 0, size.x, 8),
+      Paint()..color = const Color(0xFF3A1515),
     );
     canvas.drawRect(
-      size.toRect().deflate(2),
-      Paint()
-        ..color = const Color(0xFF3A1515)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
+      Rect.fromLTWH(0, size.y - 8, size.x, 8),
+      Paint()..color = const Color(0xFF3A1515),
     );
   }
 }

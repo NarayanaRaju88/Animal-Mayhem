@@ -20,6 +20,7 @@ abstract final class AppStrings {
   static const String none = 'None';
   static const String selectAnimalHint = 'Select an animal';
   static const String selectCommandHint = 'Select a command';
+  static const String tapWorldToMove = 'Tap the world to move';
   static const String selectTargetHint = 'Select a target, then Execute';
   static const String selectCommandFirst = 'Select a command first';
   static const String objective = 'Objective';

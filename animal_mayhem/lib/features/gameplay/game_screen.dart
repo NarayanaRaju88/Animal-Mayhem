@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_strings.dart';
 import '../../game/animal_mayhem_game.dart';
-import 'development_command_bar.dart';
+import 'gameplay_hud.dart';
 
 /// Flutter host for the Flame game.
 ///
 /// Contains no animal movement logic. The canvas is provided by
-/// [AnimalMayhemGame].
+/// [AnimalMayhemGame]. Overlay HUD stays compact so the world dominates.
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
 
@@ -30,20 +30,18 @@ class _GameScreenState extends State<GameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.gameScreenTitle)),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      backgroundColor: const Color(0xFF102018),
+      appBar: AppBar(
+        toolbarHeight: 0,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        title: const Text(AppStrings.gameScreenTitle),
+      ),
+      body: Stack(
+        fit: StackFit.expand,
         children: <Widget>[
-          ListenableBuilder(
-            listenable: _game.controller,
-            builder: (BuildContext context, Widget? _) {
-              return DevelopmentCommandBar(
-                controller: _game.controller,
-                onReset: _game.reset,
-              );
-            },
-          ),
-          Expanded(child: GameWidget<AnimalMayhemGame>(game: _game)),
+          GameWidget<AnimalMayhemGame>(game: _game),
+          GameplayHud(controller: _game.controller, onReset: _game.reset),
         ],
       ),
     );

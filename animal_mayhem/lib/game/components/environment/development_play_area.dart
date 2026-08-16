@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 
-/// Development ground: grid, bounds, and tap-to-target input.
+/// Ground plane: grass, path, and tap-to-target input.
 class DevelopmentPlayArea extends PositionComponent with TapCallbacks {
   DevelopmentPlayArea({required Vector2 worldSize, required this.onWorldTap})
     : super(size: worldSize.clone(), position: Vector2.zero());
@@ -11,10 +11,9 @@ class DevelopmentPlayArea extends PositionComponent with TapCallbacks {
   final void Function(Vector2 worldPosition) onWorldTap;
 
   static const Color fillColor = Color(0xFF3E5A46);
-  static const Color gridColor = Color(0xFF334A3C);
+  static const Color darkGrass = Color(0xFF2F4A38);
+  static const Color pathColor = Color(0xFF6A5A40);
   static const Color borderColor = Color(0xFFD7C4A3);
-
-  static const double gridStep = 80;
 
   @override
   void onTapDown(TapDownEvent event) {
@@ -24,17 +23,31 @@ class DevelopmentPlayArea extends PositionComponent with TapCallbacks {
   @override
   void render(Canvas canvas) {
     canvas.drawRect(size.toRect(), Paint()..color = fillColor);
-
-    final Paint gridPaint = Paint()
-      ..color = gridColor
-      ..strokeWidth = 1;
-    for (double x = 0; x <= size.x; x += gridStep) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.y), gridPaint);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y * 0.22),
+      Paint()..color = darkGrass,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.x * 0.18,
+          size.y * 0.42,
+          size.x * 0.64,
+          size.y * 0.38,
+        ),
+        const Radius.circular(80),
+      ),
+      Paint()..color = pathColor.withValues(alpha: 0.35),
+    );
+    final Paint tuft = Paint()..color = const Color(0x3322AA44);
+    for (int i = 0; i < 18; i++) {
+      final double x = (i * 97) % size.x;
+      final double y = (i * 163) % size.y;
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(x, y), width: 48, height: 18),
+        tuft,
+      );
     }
-    for (double y = 0; y <= size.y; y += gridStep) {
-      canvas.drawLine(Offset(0, y), Offset(size.x, y), gridPaint);
-    }
-
     canvas.drawRect(
       size.toRect().deflate(2),
       Paint()

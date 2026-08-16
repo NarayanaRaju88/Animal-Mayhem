@@ -79,5 +79,11 @@ class LeverComponent extends PositionComponent
     final Offset pivot = Offset(size.x / 2, size.y - 14);
     final Offset tip = isActive ? Offset(size.x - 6, 8) : const Offset(8, 8);
     canvas.drawLine(pivot, tip, stick);
+    canvas.drawCircle(
+      tip,
+      7,
+      Paint()
+        ..color = isActive ? const Color(0xFF7BC47A) : const Color(0xFFE24B4B),
+    );
   }
 }
