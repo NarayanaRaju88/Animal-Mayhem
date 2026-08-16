@@ -2,38 +2,28 @@ import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
 
 import '../components/animals/animal_component.dart';
-import '../components/animals/dog_component.dart';
-import '../components/animals/duck_component.dart';
 import '../systems/behavior/animal_target.dart';
 import '../systems/behavior/follow_target.dart';
 import '../systems/command/command_kind.dart';
 import '../systems/command/command_runner.dart';
 import '../systems/command/follow_command.dart';
+import '../systems/command/jump_command.dart';
 import '../systems/command/move_command.dart';
-import '../systems/objective/bring_animals_together_objective.dart';
 import '../systems/objective/game_objective.dart';
 
 /// Player-facing session state. Flutter widgets observe this; they do not
 /// move animals themselves.
 class GameController extends ChangeNotifier {
   GameController({
-    required this.dog,
-    required this.duck,
-    required this.dogSpawn,
-    required this.duckSpawn,
+    required this.animals,
+    required this.spawns,
+    required this.objective,
   });
 
-  final DogComponent dog;
-  final DuckComponent duck;
-  final Vector2 dogSpawn;
-  final Vector2 duckSpawn;
+  final List<AnimalComponent> animals;
+  final Map<AnimalComponent, Vector2> spawns;
+  final GameObjective objective;
   final CommandRunner commands = CommandRunner();
-
-  late final GameObjective objective = BringAnimalsTogetherObjective(
-    first: dog,
-    second: duck,
-    distance: dog.attributes.followDistance + 16,
-  );
 
   AnimalComponent? selectedAnimal;
   CommandKind? commandKind;
@@ -41,9 +31,13 @@ class GameController extends ChangeNotifier {
   String targetDescription = 'None';
 
   void bindInput() {
-    dog.onTapped = handleAnimalTap;
-    duck.onTapped = handleAnimalTap;
+    for (final AnimalComponent animal in animals) {
+      animal.onTapped = handleAnimalTap;
+    }
   }
+
+  List<CommandKind> get availableCommands =>
+      selectedAnimal?.availableCommands ?? const <CommandKind>[];
 
   void handleAnimalTap(AnimalComponent animal) {
     if (commandKind == CommandKind.follow &&
@@ -67,6 +61,9 @@ class GameController extends ChangeNotifier {
   }
 
   void chooseCommand(CommandKind kind) {
+    if (!availableCommands.contains(kind)) {
+      return;
+    }
     commandKind = kind;
     selectedTarget = null;
     targetDescription = 'None';
@@ -78,6 +75,9 @@ class GameController extends ChangeNotifier {
     final CommandKind? kind = commandKind;
     final FollowTarget? target = selectedTarget;
     if (actor == null || kind == null || target == null) {
+      return;
+    }
+    if (!actor.availableCommands.contains(kind)) {
       return;
     }
 
@@ -94,6 +94,10 @@ class GameController extends ChangeNotifier {
             followDistance: actor.attributes.followDistance,
           ),
         );
+      case CommandKind.jump:
+        commands.start(
+          JumpCommand(actor: actor, destination: target.worldPosition),
+        );
     }
     notifyListeners();
   }
@@ -109,8 +113,12 @@ class GameController extends ChangeNotifier {
 
   void reset() {
     commands.reset();
-    dog.resetTo(dogSpawn);
-    duck.resetTo(duckSpawn);
+    for (final AnimalComponent animal in animals) {
+      final Vector2? spawn = spawns[animal];
+      if (spawn != null) {
+        animal.resetTo(spawn);
+      }
+    }
     objective.reset();
     selectedAnimal = null;
     commandKind = null;
@@ -125,13 +133,17 @@ class GameController extends ChangeNotifier {
   String get selectedLabel => selectedAnimal?.speciesName ?? 'None';
 
   String get objectiveLabel =>
-      objective.isComplete ? 'Complete' : 'Bring the Dog to the Duck';
+      objective.isComplete ? 'Complete' : objective.description;
 
   void _select(AnimalComponent animal) {
-    for (final AnimalComponent candidate in <AnimalComponent>[dog, duck]) {
+    for (final AnimalComponent candidate in animals) {
       candidate.isSelected = identical(candidate, animal);
     }
     selectedAnimal = animal;
+    if (commandKind != null &&
+        !animal.availableCommands.contains(commandKind)) {
+      commandKind = null;
+    }
     selectedTarget = null;
     targetDescription = 'None';
   }

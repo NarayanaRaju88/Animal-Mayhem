@@ -6,6 +6,8 @@ abstract class GameObjective {
 
   bool get isComplete => status == ObjectiveStatus.completed;
 
+  String get description => 'Objective';
+
   void update();
 
   void reset() {

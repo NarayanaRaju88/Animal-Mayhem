@@ -1,5 +1,6 @@
 import 'package:flame/components.dart';
 
+import '../../systems/abilities/animal_abilities.dart';
 import '../../systems/environment/movement_capabilities.dart';
 import 'animal_attributes.dart';
 import 'animal_component.dart';
@@ -11,6 +12,7 @@ class DogComponent extends AnimalComponent {
     : super(
         speciesName: 'Dog',
         capabilities: MovementCapabilities.landOnly,
+        abilities: AnimalAbilities.walk,
         attributes: AnimalAttributes(speed: 220, size: Vector2(64, 40)),
       );
 
