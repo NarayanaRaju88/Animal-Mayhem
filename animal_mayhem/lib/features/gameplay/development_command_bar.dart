@@ -14,15 +14,39 @@ class DevelopmentCommandBar extends StatelessWidget {
 
   static const Key moveButtonKey = Key('command_move_button');
   static const Key followButtonKey = Key('command_follow_button');
+  static const Key jumpButtonKey = Key('command_jump_button');
   static const Key executeButtonKey = Key('command_execute_button');
 
   final GameController controller;
   final VoidCallback onReset;
 
+  static Key _keyFor(CommandKind kind) {
+    switch (kind) {
+      case CommandKind.move:
+        return moveButtonKey;
+      case CommandKind.follow:
+        return followButtonKey;
+      case CommandKind.jump:
+        return jumpButtonKey;
+    }
+  }
+
+  static String _labelFor(CommandKind kind) {
+    switch (kind) {
+      case CommandKind.move:
+        return AppStrings.move;
+      case CommandKind.follow:
+        return AppStrings.follow;
+      case CommandKind.jump:
+        return AppStrings.jump;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
+    final List<CommandKind> commands = controller.availableCommands;
 
     return Material(
       color: colors.surfaceContainerHighest,
@@ -46,29 +70,25 @@ class DevelopmentCommandBar extends StatelessWidget {
                 style: textTheme.bodyMedium,
               ),
               const SizedBox(height: 8),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _CommandButton(
-                      key: moveButtonKey,
-                      label: AppStrings.move,
-                      selected: controller.commandKind == CommandKind.move,
-                      onPressed: () =>
-                          controller.chooseCommand(CommandKind.move),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _CommandButton(
-                      key: followButtonKey,
-                      label: AppStrings.follow,
-                      selected: controller.commandKind == CommandKind.follow,
-                      onPressed: () =>
-                          controller.chooseCommand(CommandKind.follow),
-                    ),
-                  ),
-                ],
-              ),
+              if (commands.isEmpty)
+                Text(AppStrings.selectAnimalHint, style: textTheme.bodyMedium)
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    for (final CommandKind kind in commands)
+                      SizedBox(
+                        width: 110,
+                        child: _CommandButton(
+                          key: _keyFor(kind),
+                          label: _labelFor(kind),
+                          selected: controller.commandKind == kind,
+                          onPressed: () => controller.chooseCommand(kind),
+                        ),
+                      ),
+                  ],
+                ),
               const SizedBox(height: 8),
               Row(
                 children: <Widget>[

@@ -5,10 +5,16 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 
 import '../../../core/utils/angles.dart';
+import '../../systems/abilities/ability_kind.dart';
+import '../../systems/abilities/animal_abilities.dart';
+import '../../systems/abilities/jump_ability.dart';
+import '../../systems/abilities/jump_motion.dart';
 import '../../systems/behavior/follow_target.dart';
+import '../../systems/command/command_kind.dart';
 import '../../systems/environment/movement_capabilities.dart';
 import '../../systems/environment/terrain_kind.dart';
 import '../../systems/environment/terrain_map.dart';
+import '../objects/obstacle_component.dart';
 import 'animal_attributes.dart';
 import 'animal_state.dart';
 import 'selection_ring.dart';
@@ -23,6 +29,8 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     required this.worldBounds,
     this.speciesName = 'Animal',
     this.capabilities = MovementCapabilities.landOnly,
+    this.abilities = AnimalAbilities.walk,
+    this.jumpAbility,
     this.terrain,
     this.onTapped,
     Vector2? position,
@@ -36,7 +44,10 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   final AnimalAttributes attributes;
   final String speciesName;
   final MovementCapabilities capabilities;
+  final AnimalAbilities abilities;
+  final JumpAbility? jumpAbility;
   TerrainMap? terrain;
+  List<ObstacleComponent> obstacles = <ObstacleComponent>[];
   void Function(AnimalComponent animal)? onTapped;
   Rect worldBounds;
 
@@ -47,6 +58,8 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
 
   bool _followMode = false;
   double _stopDistance = 0;
+  JumpMotion? _jump;
+  double _landingTimer = 0;
   late final SelectionRing _selectionRing = SelectionRing(ownerSize: size);
 
   bool get isSelected => _selectionRing.isActive;
@@ -55,8 +68,18 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     _selectionRing.isActive = value;
   }
 
+  bool get isJumping => _jump != null;
+
+  bool get hasJumpAbility =>
+      abilities.has(AbilityKind.jump) && jumpAbility != null;
+
+  List<CommandKind> get availableCommands => abilities.availableCommands;
+
   /// Moves toward a fixed world point. Clamped to the playable inner bounds.
   void moveTo(Vector2 worldPosition) {
+    if (isJumping) {
+      return;
+    }
     _followMode = false;
     _stopDistance = attributes.arrivalThreshold;
     final Vector2 clamped = clampToInnerBounds(worldPosition);
@@ -66,24 +89,71 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
 
   /// Follows any [FollowTarget], including a later moving animal or object.
   void follow(FollowTarget newTarget, {double? stopDistance}) {
+    if (isJumping) {
+      return;
+    }
     _followMode = true;
     _stopDistance = stopDistance ?? attributes.followDistance;
     target = newTarget;
     state = AnimalState.following;
   }
 
-  void clearTarget() {
+  /// Starts a commanded jump. Returns false if the animal cannot jump now.
+  bool startJump(Vector2 worldPosition) {
+    final JumpAbility? ability = jumpAbility;
+    if (!hasJumpAbility || ability == null) {
+      return false;
+    }
+    if (isJumping || state == AnimalState.landing) {
+      return false;
+    }
+
+    Vector2 destination = clampToInnerBounds(worldPosition);
+    final Vector2 offset = destination - position;
+    final double distance = offset.length;
+    if (distance < 4) {
+      return false;
+    }
+    if (distance > ability.maxDistance) {
+      destination = position + offset.normalized() * ability.maxDistance;
+      destination = clampToInnerBounds(destination);
+    }
+    if (!_canLandAt(destination) || !_jumpPathIsClear(destination)) {
+      return false;
+    }
+
     target = null;
     _followMode = false;
+    velocity.setZero();
+    _jump = JumpMotion(
+      start: position,
+      end: destination,
+      height: ability.height,
+      duration: ability.duration,
+    );
+    state = AnimalState.jumping;
+    return true;
+  }
+
+  void clearTarget() {
+    _cancelJump();
+    target = null;
+    _followMode = false;
+    _landingTimer = 0;
     state = AnimalState.idle;
     velocity.setZero();
   }
 
   void resetTo(Vector2 spawn) {
+    _cancelJump();
+    _landingTimer = 0;
     position.setFrom(clampToInnerBounds(spawn));
     angle = 0;
     isSelected = false;
-    clearTarget();
+    target = null;
+    _followMode = false;
+    state = AnimalState.idle;
+    velocity.setZero();
   }
 
   Vector2 clampToInnerBounds(Vector2 point) {
@@ -101,10 +171,13 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
 
   bool canOccupy(Vector2 point) {
     final TerrainMap? map = terrain;
-    if (map == null) {
+    if (map != null && !capabilities.canTraverse(map.kindAt(point))) {
+      return false;
+    }
+    if (isJumping) {
       return true;
     }
-    return capabilities.canTraverse(map.kindAt(point));
+    return !_blockedByObstacle(point, allowJumpable: false);
   }
 
   @override
@@ -123,6 +196,19 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   void update(double dt) {
     super.update(dt);
     if (dt <= 0) {
+      return;
+    }
+
+    if (_jump != null) {
+      _updateJump(dt);
+      return;
+    }
+
+    if (state == AnimalState.landing) {
+      _landingTimer -= dt;
+      if (_landingTimer <= 0) {
+        state = AnimalState.idle;
+      }
       return;
     }
 
@@ -178,6 +264,62 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     }
 
     _refreshState();
+  }
+
+  void _updateJump(double dt) {
+    final JumpMotion jump = _jump!;
+    jump.advance(dt);
+    position.setFrom(jump.position);
+    final Vector2 delta = jump.end - jump.start;
+    if (delta.length2 > 0) {
+      angle = math.atan2(delta.y, delta.x);
+    }
+    if (jump.isComplete) {
+      position.setFrom(jump.end);
+      _jump = null;
+      state = AnimalState.landing;
+      _landingTimer = 0.12;
+    }
+  }
+
+  void _cancelJump() {
+    final JumpMotion? jump = _jump;
+    if (jump != null) {
+      position.setFrom(jump.groundPosition);
+      _jump = null;
+    }
+  }
+
+  bool _canLandAt(Vector2 point) {
+    final TerrainMap? map = terrain;
+    if (map != null && !capabilities.canTraverse(map.kindAt(point))) {
+      return false;
+    }
+    return !_blockedByObstacle(point, allowJumpable: false);
+  }
+
+  bool _jumpPathIsClear(Vector2 destination) {
+    for (int i = 1; i <= 8; i++) {
+      final double t = i / 9;
+      final Vector2 sample = position + (destination - position) * t;
+      if (_blockedByObstacle(sample, allowJumpable: true)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _blockedByObstacle(Vector2 point, {required bool allowJumpable}) {
+    for (final ObstacleComponent obstacle in obstacles) {
+      if (!obstacle.containsWorldPoint(point)) {
+        continue;
+      }
+      if (allowJumpable && obstacle.jumpable) {
+        continue;
+      }
+      return true;
+    }
+    return false;
   }
 
   void _refreshState() {

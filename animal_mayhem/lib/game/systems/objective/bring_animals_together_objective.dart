@@ -8,11 +8,15 @@ class BringAnimalsTogetherObjective extends GameObjective {
     required this.first,
     required this.second,
     required this.distance,
+    this.description = 'Bring the animals together',
   });
 
   final AnimalComponent first;
   final AnimalComponent second;
   final double distance;
+
+  @override
+  final String description;
 
   @override
   void update() {

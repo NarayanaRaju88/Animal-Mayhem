@@ -1,7 +1,9 @@
 import 'package:animal_mayhem/game/components/animals/animal_attributes.dart';
 import 'package:animal_mayhem/game/components/animals/animal_component.dart';
+import 'package:animal_mayhem/game/components/animals/frog_component.dart';
 import 'package:animal_mayhem/game/systems/command/command_status.dart';
 import 'package:animal_mayhem/game/systems/command/follow_command.dart';
+import 'package:animal_mayhem/game/systems/command/jump_command.dart';
 import 'package:animal_mayhem/game/systems/command/move_command.dart';
 import 'package:animal_mayhem/game/systems/behavior/follow_target.dart';
 import 'package:flame/components.dart';
@@ -69,5 +71,28 @@ void main() {
 
     expect(command.status, CommandStatus.cancelled);
     expect(actor.target, isNull);
+  });
+
+  test('JumpCommand can be created, executed, and completed', () {
+    final FrogComponent frog = FrogComponent(
+      worldBounds: bounds,
+      position: Vector2(80, 120),
+    );
+    final JumpCommand command = JumpCommand(
+      actor: frog,
+      destination: Vector2(200, 120),
+    );
+
+    expect(command.status, CommandStatus.pending);
+    command.execute();
+    expect(command.status, CommandStatus.executing);
+    expect(frog.isJumping, isTrue);
+
+    for (int i = 0; i < 80; i++) {
+      frog.update(1 / 60);
+      command.tick(1 / 60);
+    }
+
+    expect(command.status, CommandStatus.completed);
   });
 }
