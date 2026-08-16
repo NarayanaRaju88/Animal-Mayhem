@@ -1,2 +1,2 @@
 /// Player-chosen command kinds.
-enum CommandKind { move, follow, jump, interact }
+enum CommandKind { move, follow, jump, interact, climb }

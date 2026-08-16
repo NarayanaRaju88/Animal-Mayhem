@@ -4,6 +4,7 @@ import 'package:animal_mayhem/game/components/animals/cat_component.dart';
 import 'package:animal_mayhem/game/components/animals/dog_component.dart';
 import 'package:animal_mayhem/game/components/animals/duck_component.dart';
 import 'package:animal_mayhem/game/components/animals/frog_component.dart';
+import 'package:animal_mayhem/game/components/animals/monkey_component.dart';
 import 'package:flame/game.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -28,5 +29,6 @@ void main() {
     expect(game.world.frog, isA<FrogComponent>());
     expect(game.world.cat, isA<CatComponent>());
     expect(game.world.buffalo, isA<BuffaloComponent>());
+    expect(game.world.monkey, isA<MonkeyComponent>());
   });
 }
