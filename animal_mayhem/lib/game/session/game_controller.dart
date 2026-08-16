@@ -23,12 +23,14 @@ class GameController extends ChangeNotifier {
     required this.spawns,
     required this.objective,
     List<Resettable>? resettables,
+    this.environmentStatus,
   }) : resettables = resettables ?? <Resettable>[];
 
   final List<AnimalComponent> animals;
   final Map<AnimalComponent, Vector2> spawns;
   final GameObjective objective;
   final List<Resettable> resettables;
+  final String Function()? environmentStatus;
   final CommandRunner commands = CommandRunner();
 
   AnimalComponent? selectedAnimal;
@@ -36,6 +38,7 @@ class GameController extends ChangeNotifier {
   FollowTarget? selectedTarget;
   String targetDescription = 'None';
   bool _lastCanExecute = false;
+  String _lastEnvironmentStatus = '';
 
   void bindInput() {
     for (final AnimalComponent animal in animals) {
@@ -140,8 +143,12 @@ class GameController extends ChangeNotifier {
     final bool wasComplete = objective.isComplete;
     objective.update();
     final bool executeNow = canExecute;
-    if (objective.isComplete != wasComplete || executeNow != _lastCanExecute) {
+    final String environmentNow = environmentLabel;
+    if (objective.isComplete != wasComplete ||
+        executeNow != _lastCanExecute ||
+        environmentNow != _lastEnvironmentStatus) {
       _lastCanExecute = executeNow;
+      _lastEnvironmentStatus = environmentNow;
       notifyListeners();
     } else {
       _lastCanExecute = executeNow;
@@ -165,6 +172,7 @@ class GameController extends ChangeNotifier {
     selectedTarget = null;
     targetDescription = 'None';
     _lastCanExecute = false;
+    _lastEnvironmentStatus = '';
     notifyListeners();
   }
 
@@ -188,6 +196,8 @@ class GameController extends ChangeNotifier {
 
   String get objectiveLabel =>
       objective.isComplete ? 'Complete' : objective.description;
+
+  String get environmentLabel => environmentStatus?.call() ?? '';
 
   void _select(AnimalComponent animal) {
     for (final AnimalComponent candidate in animals) {

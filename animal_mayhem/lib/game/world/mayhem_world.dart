@@ -10,26 +10,32 @@ import '../components/animals/frog_component.dart';
 import '../components/environment/development_play_area.dart';
 import '../components/environment/narrow_passage.dart';
 import '../components/environment/water_region.dart';
+import '../components/objects/bridge_component.dart';
 import '../components/objects/gate.dart';
 import '../components/objects/goal_zone.dart';
 import '../components/objects/lever_component.dart';
 import '../components/objects/lily_pad_component.dart';
 import '../components/objects/obstacle_component.dart';
+import '../components/objects/pressure_pad_component.dart';
 import '../components/objects/target_marker.dart';
 import '../session/game_controller.dart';
 import '../systems/behavior/follow_target.dart';
+import '../systems/environment/environment_link.dart';
+import '../systems/environment/occupancy_requirement.dart';
 import '../systems/environment/terrain_map.dart';
 import '../systems/interaction/resettable.dart';
 import '../systems/objective/animal_at_location_objective.dart';
+import '../systems/objective/bridge_enabled_objective.dart';
 import '../systems/objective/composite_objective.dart';
 import '../systems/objective/game_objective.dart';
 import '../systems/objective/gate_open_objective.dart';
+import '../systems/objective/pressure_pad_active_objective.dart';
 
-/// Stage 5 development puzzle.
+/// Stage 6 development puzzle.
 ///
-/// The Cat uses a narrow passage to reach a lever that opens a gate. The Duck
-/// must swim north of the water and walk through the opened gate to the goal.
-/// The Dog cannot cross water. Passage fit uses physical profiles, not species.
+/// Cat uses the narrow passage and lever to open the gate. Duck swims north
+/// and stands on the pressure pad, which enables a bridge over the water. Dog
+/// crosses the bridge and walks through the open gate to the goal.
 class MayhemWorld extends World {
   MayhemWorld()
     : terrain = TerrainMap(
@@ -71,7 +77,7 @@ class MayhemWorld extends World {
         size: Vector2(1400 - (920 + MayhemWorld.passageClearance), 80),
       ),
       jumpableBarrier = JumpableBarrier(
-        position: Vector2(1180, 1480),
+        position: Vector2(40, 1480),
         size: Vector2(160, 90),
       ),
       normalBarrier = NormalBarrier(
@@ -80,7 +86,16 @@ class MayhemWorld extends World {
       ),
       lilyPad = LilyPadComponent(position: MayhemWorld.lilyPadPosition),
       goal = GoalZone(bounds: MayhemWorld.goalBounds),
-      lever = LeverComponent(position: MayhemWorld.leverPosition) {
+      lever = LeverComponent(position: MayhemWorld.leverPosition),
+      pad = PressurePadComponent(
+        position: MayhemWorld.padPosition,
+        size: MayhemWorld.padSize,
+        requirement: const SpeciesRequirement('Duck'),
+      ),
+      bridge = BridgeComponent(
+        position: MayhemWorld.bridgePosition,
+        size: MayhemWorld.bridgeSize,
+      ) {
     final List<ObstacleComponent> blockers = <ObstacleComponent>[
       westWall,
       gate,
@@ -90,19 +105,24 @@ class MayhemWorld extends World {
       normalBarrier,
     ];
     final List<NarrowPassage> corridors = <NarrowPassage>[passage];
-    for (final AnimalComponent animal in <AnimalComponent>[
+    final List<BridgeComponent> crossings = <BridgeComponent>[bridge];
+    final List<AnimalComponent> roster = <AnimalComponent>[
       dog,
       duck,
       frog,
       cat,
-    ]) {
+    ];
+    for (final AnimalComponent animal in roster) {
       animal.terrain = terrain;
       animal.obstacles = blockers;
       animal.passages = corridors;
+      animal.bridges = crossings;
     }
+    pad.animals = roster;
     lever.onActivated = gate.open;
+    padBridgeLink = EnvironmentLink(trigger: pad, responder: bridge);
     controller = GameController(
-      animals: <AnimalComponent>[dog, duck, frog, cat],
+      animals: roster,
       spawns: <AnimalComponent, Vector2>{
         dog: MayhemWorld.dogSpawn,
         duck: MayhemWorld.duckSpawn,
@@ -110,13 +130,19 @@ class MayhemWorld extends World {
         cat: MayhemWorld.catSpawn,
       },
       objective: CompositeObjective(
-        description: 'Open the gate, Duck to the Goal',
+        description: 'Open the gate, Duck on pad, Dog across the bridge',
         children: <GameObjective>[
           GateOpenObjective(gate: gate),
-          AnimalAtLocationObjective(animal: duck, zone: MayhemWorld.goalBounds),
+          PressurePadActiveObjective(pad: pad),
+          BridgeEnabledObjective(bridge: bridge),
+          AnimalAtLocationObjective(animal: dog, zone: MayhemWorld.goalBounds),
         ],
       ),
-      resettables: <Resettable>[lever, gate],
+      resettables: <Resettable>[lever, gate, pad, bridge],
+      environmentStatus: () =>
+          'Gate: ${gate.isOpen ? 'OPEN' : 'CLOSED'}  '
+          'Pad: ${pad.isActive ? 'ACTIVE' : 'INACTIVE'}  '
+          'Bridge: ${bridge.isEnabled ? 'ON' : 'OFF'}',
     )..bindInput();
     lilyPad.onTapped = controller.handleWorldTap;
     lever.onTapped = controller.handleInteractableTap;
@@ -132,15 +158,23 @@ class MayhemWorld extends World {
 
   static Rect get goalBounds => const Rect.fromLTWH(180, 60, 300, 160);
 
+  static Vector2 get padPosition => Vector2(280, 680);
+
+  static Vector2 get padSize => Vector2(100, 100);
+
+  static Vector2 get bridgePosition => Vector2(1040, 1000);
+
+  static Vector2 get bridgeSize => Vector2(140, 280);
+
   static Vector2 get catSpawn => Vector2(700, 880);
 
   static Vector2 get frogSpawn => Vector2(700, 1700);
 
   static Vector2 get duckSpawn => Vector2(420, 1550);
 
-  static Vector2 get dogSpawn => Vector2(980, 1880);
+  static Vector2 get dogSpawn => Vector2(1110, 1880);
 
-  static Vector2 get lilyPadPosition => Vector2(size.x / 2, 1140);
+  static Vector2 get lilyPadPosition => Vector2(420, 1140);
 
   static Vector2 get leverPosition => Vector2(941, 180);
 
@@ -161,6 +195,9 @@ class MayhemWorld extends World {
   final LilyPadComponent lilyPad;
   final GoalZone goal;
   final LeverComponent lever;
+  final PressurePadComponent pad;
+  final BridgeComponent bridge;
+  late final EnvironmentLink padBridgeLink;
   late final GameController controller;
 
   TargetMarker? _targetMarker;
@@ -175,6 +212,7 @@ class MayhemWorld extends World {
       ),
     );
     await add(WaterRegion(bounds: waterBounds));
+    await add(bridge);
     await add(goal);
     await add(westWall);
     await add(gate);
@@ -184,6 +222,7 @@ class MayhemWorld extends World {
     await add(jumpableBarrier);
     await add(normalBarrier);
     await add(lilyPad);
+    await add(pad);
     await add(lever);
     await add(dog);
     await add(duck);
@@ -194,12 +233,15 @@ class MayhemWorld extends World {
   @override
   void update(double dt) {
     super.update(dt);
+    padBridgeLink.sync();
     controller.tick(dt);
     _syncTargetMarker();
   }
 
   void reset() {
     controller.reset();
+    pad.refresh();
+    padBridgeLink.sync(force: true);
     _clearMarker();
   }
 

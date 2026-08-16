@@ -15,6 +15,10 @@ import 'package:animal_mayhem/game/systems/command/command_status.dart';
 import 'package:animal_mayhem/game/systems/command/interact_command.dart';
 import 'package:animal_mayhem/game/systems/environment/physical_profile.dart';
 import 'package:animal_mayhem/game/systems/interaction/interactable.dart';
+import 'package:animal_mayhem/game/systems/objective/animal_at_location_objective.dart';
+import 'package:animal_mayhem/game/systems/objective/composite_objective.dart';
+import 'package:animal_mayhem/game/systems/objective/game_objective.dart';
+import 'package:animal_mayhem/game/systems/objective/gate_open_objective.dart';
 import 'package:animal_mayhem/game/systems/objective/objective_status.dart';
 import 'package:animal_mayhem/game/world/mayhem_world.dart';
 import 'package:flame/components.dart';
@@ -273,18 +277,31 @@ void main() {
     test(
       'completes after the lever opens the gate and the duck reaches the goal',
       () {
-        final MayhemWorld world = MayhemWorld();
-        world.lever.interact();
-        world.duck.position.setFrom(
-          Vector2(
-            MayhemWorld.goalBounds.center.dx,
-            MayhemWorld.goalBounds.center.dy,
-          ),
+        const Rect bounds = Rect.fromLTWH(0, 0, 800, 600);
+        const Rect goal = Rect.fromLTWH(200, 40, 80, 80);
+        final DuckComponent duck = DuckComponent(
+          worldBounds: bounds,
+          position: Vector2(40, 400),
         );
-        world.controller.objective.update();
+        final Gate gate = Gate(position: Vector2(0, 0), size: Vector2(40, 40));
+        final LeverComponent lever = LeverComponent(
+          position: Vector2(80, 80),
+          onActivated: gate.open,
+        );
+        final CompositeObjective objective = CompositeObjective(
+          description: 'Open the gate, Duck to the Goal',
+          children: <GameObjective>[
+            GateOpenObjective(gate: gate),
+            AnimalAtLocationObjective(animal: duck, zone: goal),
+          ],
+        );
 
-        expect(world.gate.isOpen, isTrue);
-        expect(world.controller.objective.isComplete, isTrue);
+        lever.interact();
+        duck.position.setValues(220, 60);
+        objective.update();
+
+        expect(gate.isOpen, isTrue);
+        expect(objective.isComplete, isTrue);
       },
     );
 
