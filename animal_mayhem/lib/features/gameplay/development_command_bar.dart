@@ -24,6 +24,8 @@ class DevelopmentCommandBar extends StatelessWidget {
   final GameController controller;
   final VoidCallback onReset;
 
+  static Key commandKey(CommandKind kind) => _keyFor(kind);
+
   static Key _keyFor(CommandKind kind) {
     switch (kind) {
       case CommandKind.move:
@@ -40,6 +42,8 @@ class DevelopmentCommandBar extends StatelessWidget {
         return coilButtonKey;
     }
   }
+
+  static String commandLabel(CommandKind kind) => _labelFor(kind);
 
   static String _labelFor(CommandKind kind) {
     switch (kind) {

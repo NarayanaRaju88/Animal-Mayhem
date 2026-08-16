@@ -27,16 +27,9 @@ class PlatformComponent extends PositionComponent {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3,
     );
-    final String caption = level == HeightLevel.upper ? 'UPPER' : 'LOWER';
-    final Paragraph paragraph =
-        (ParagraphBuilder(
-            ParagraphStyle(
-              textAlign: TextAlign.left,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          )..addText(caption)).build()
-          ..layout(ParagraphConstraints(width: size.x - 12));
-    canvas.drawParagraph(paragraph, const Offset(8, 8));
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.y - 10, size.x, 10),
+      Paint()..color = const Color(0xFF2E3A2E),
+    );
   }
 }

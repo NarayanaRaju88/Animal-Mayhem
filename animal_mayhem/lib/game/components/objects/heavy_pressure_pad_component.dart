@@ -28,5 +28,13 @@ class HeavyPressurePadComponent extends PressurePadComponent {
       ),
       Paint()..color = isActive ? heavyActiveColor : heavyInactiveColor,
     );
+    canvas.drawCircle(
+      Offset(size.x / 2, size.y / 2),
+      size.x * 0.16,
+      Paint()
+        ..color = const Color(0x66F4E27A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
   }
 }

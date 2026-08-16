@@ -83,7 +83,16 @@ class PushableComponent extends ObstacleComponent implements Resettable {
 
   @override
   void render(Canvas canvas) {
-    canvas.drawRect(size.toRect(), Paint()..color = fillColor);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(size.toRect(), const Radius.circular(6)),
+      Paint()..color = fillColor,
+    );
+    final Paint plank = Paint()
+      ..color = const Color(0xFFD2B48C)
+      ..strokeWidth = 2;
+    for (double y = 10; y < size.y - 6; y += 12) {
+      canvas.drawLine(Offset(8, y), Offset(size.x - 8, y), plank);
+    }
     canvas.drawRect(
       size.toRect().deflate(3),
       Paint()
@@ -91,5 +100,10 @@ class PushableComponent extends ObstacleComponent implements Resettable {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3,
     );
+    final Paint iron = Paint()..color = const Color(0xFF3A2A1A);
+    canvas.drawRect(const Rect.fromLTWH(2, 2, 10, 10), iron);
+    canvas.drawRect(Rect.fromLTWH(size.x - 12, 2, 10, 10), iron);
+    canvas.drawRect(Rect.fromLTWH(2, size.y - 12, 10, 10), iron);
+    canvas.drawRect(Rect.fromLTWH(size.x - 12, size.y - 12, 10, 10), iron);
   }
 }

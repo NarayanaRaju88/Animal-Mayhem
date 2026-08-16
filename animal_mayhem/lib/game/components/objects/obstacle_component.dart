@@ -30,6 +30,10 @@ class NormalBarrier extends ObstacleComponent {
   void render(Canvas canvas) {
     canvas.drawRect(size.toRect(), Paint()..color = fillColor);
     canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, 8),
+      Paint()..color = const Color(0xFF7A5A48),
+    );
+    canvas.drawRect(
       size.toRect().deflate(2),
       Paint()
         ..color = const Color(0xFF2B1A14)

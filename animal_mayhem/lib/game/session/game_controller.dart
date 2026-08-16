@@ -22,6 +22,7 @@ import '../systems/command/move_command.dart';
 import '../systems/environment/height_level.dart';
 import '../systems/interaction/interactable.dart';
 import '../systems/interaction/resettable.dart';
+import '../systems/objective/composite_objective.dart';
 import '../systems/objective/game_objective.dart';
 
 /// Player-facing session state. Flutter widgets observe this; they do not
@@ -56,13 +57,19 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  /// Commands come from the selected animal's capabilities.
   List<CommandKind> get availableCommands {
     final AnimalComponent? animal = selectedAnimal;
     if (animal == null) {
       return const <CommandKind>[];
     }
     return animal.availableCommands;
+  }
+
+  /// Commands shown in the compact HUD. MOVE is tap-to-move on the world.
+  List<CommandKind> get contextualCommands {
+    return availableCommands
+        .where((CommandKind kind) => kind != CommandKind.move)
+        .toList();
   }
 
   void handleAnimalTap(AnimalComponent animal) {
@@ -79,7 +86,7 @@ class GameController extends ChangeNotifier {
   }
 
   void handleWorldTap(Vector2 worldPosition) {
-    if (selectedAnimal == null || commandKind == null) {
+    if (selectedAnimal == null) {
       return;
     }
     if (commandKind == CommandKind.interact ||
@@ -89,6 +96,12 @@ class GameController extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    if (commandKind == null) {
+      if (!selectedAnimal!.availableCommands.contains(CommandKind.move)) {
+        return;
+      }
+      commandKind = CommandKind.move;
+    }
     selectedTarget = WorldPositionTarget(worldPosition);
     targetDescription = 'World';
     if (commandKind == CommandKind.jump) {
@@ -96,8 +109,13 @@ class GameController extends ChangeNotifier {
         CommandKind.jump,
         selectedAnimal!.jumpFailure(worldPosition),
       );
-    } else {
-      actionFeedback = null;
+      notifyListeners();
+      return;
+    }
+    actionFeedback = null;
+    if (commandKind == CommandKind.move && canExecute) {
+      execute();
+      return;
     }
     notifyListeners();
   }
@@ -380,13 +398,21 @@ class GameController extends ChangeNotifier {
     if (selectedAnimal == null) {
       return AppStrings.selectAnimalHint;
     }
-    if (commandKind == null) {
-      return AppStrings.selectCommandHint;
+    if (commandKind == null || commandKind == CommandKind.move) {
+      return AppStrings.tapWorldToMove;
     }
     if (selectedTarget == null) {
       return AppStrings.selectTargetHint;
     }
     return '';
+  }
+
+  List<GameObjective> get objectiveSteps {
+    final GameObjective current = objective;
+    if (current is CompositeObjective) {
+      return current.children;
+    }
+    return <GameObjective>[current];
   }
 
   String get objectiveLabel =>

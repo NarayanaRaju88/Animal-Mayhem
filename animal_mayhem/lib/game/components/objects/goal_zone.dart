@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 
-/// Development goal region the frog must enter.
+/// Goal region marked as an exit.
 class GoalZone extends PositionComponent {
   GoalZone({required Rect bounds})
     : super(
@@ -25,6 +25,16 @@ class GoalZone extends PositionComponent {
     canvas.drawRRect(
       RRect.fromRectAndRadius(size.toRect(), const Radius.circular(12)),
       Paint()..color = fillColor,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        size.toRect().deflate(6),
+        const Radius.circular(10),
+      ),
+      Paint()
+        ..color = const Color(0x88F4E27A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
     );
     final Path flag = Path()
       ..moveTo(size.x / 2, 12)
