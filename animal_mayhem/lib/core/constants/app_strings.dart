@@ -1,4 +1,4 @@
-/// User-facing copy for the Stage 1 application shell.
+/// User-facing copy for the application shell and Stage 3 development UI.
 abstract final class AppStrings {
   static const String appName = 'Animal Mayhem';
   static const String homeTagline =
@@ -7,4 +7,11 @@ abstract final class AppStrings {
   static const String gameScreenTitle = 'Game';
   static const String dogTest = 'DOG TEST';
   static const String reset = 'Reset';
+  static const String selected = 'Selected';
+  static const String command = 'Command';
+  static const String target = 'Target';
+  static const String move = 'MOVE';
+  static const String follow = 'FOLLOW';
+  static const String execute = 'EXECUTE';
+  static const String objective = 'Objective';
 }

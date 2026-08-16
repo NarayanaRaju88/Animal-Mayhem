@@ -11,6 +11,7 @@ final class AnimalAttributes {
     this.steerRate = 8,
     this.turnRate = 10,
     this.arrivalThreshold = 10,
+    this.followDistance = 72,
   });
 
   /// World units per second.
@@ -27,4 +28,7 @@ final class AnimalAttributes {
 
   /// Distance at which the animal considers the target reached.
   final double arrivalThreshold;
+
+  /// Distance maintained when following another target.
+  final double followDistance;
 }

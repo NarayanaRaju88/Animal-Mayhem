@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_strings.dart';
 import '../../game/animal_mayhem_game.dart';
+import 'development_command_bar.dart';
 
 /// Flutter host for the Flame game.
 ///
@@ -28,39 +29,19 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.gameScreenTitle)),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Material(
-            color: colors.surfaceContainerHighest,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: <Widget>[
-                    Text(
-                      AppStrings.dogTest,
-                      style: Theme.of(context).textTheme.labelLarge
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      key: GameScreen.resetButtonKey,
-                      onPressed: _game.reset,
-                      child: const Text(AppStrings.reset),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          ListenableBuilder(
+            listenable: _game.controller,
+            builder: (BuildContext context, Widget? _) {
+              return DevelopmentCommandBar(
+                controller: _game.controller,
+                onReset: _game.reset,
+              );
+            },
           ),
           Expanded(child: GameWidget<AnimalMayhemGame>(game: _game)),
         ],
