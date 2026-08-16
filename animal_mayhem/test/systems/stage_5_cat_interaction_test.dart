@@ -15,7 +15,6 @@ import 'package:animal_mayhem/game/systems/command/command_status.dart';
 import 'package:animal_mayhem/game/systems/command/interact_command.dart';
 import 'package:animal_mayhem/game/systems/environment/physical_profile.dart';
 import 'package:animal_mayhem/game/systems/interaction/interactable.dart';
-import 'package:animal_mayhem/game/systems/environment/route_state.dart';
 import 'package:animal_mayhem/game/systems/objective/animal_at_location_objective.dart';
 import 'package:animal_mayhem/game/systems/objective/composite_objective.dart';
 import 'package:animal_mayhem/game/systems/objective/game_objective.dart';
@@ -308,15 +307,15 @@ void main() {
       final MayhemWorld world = MayhemWorld();
       world.controller.handleAnimalTap(world.cat);
       world.controller.chooseCommand(CommandKind.interact);
-      world.controller.handleInteractableTap(world.routeSwitch);
+      world.controller.handleInteractableTap(world.lever);
       world.cat.position.setValues(200, 200);
       world.duck.position.setValues(300, 300);
       world.dog.position.setValues(400, 400);
       world.frog.position.setValues(500, 500);
-      world.routeSwitch.interact();
+      world.lever.interact();
       world.controller.objective.update();
 
-      expect(world.routeSwitch.route, RouteId.b);
+      expect(world.lever.isActive, isTrue);
 
       world.reset();
 
@@ -337,12 +336,12 @@ void main() {
         final MayhemWorld world = MayhemWorld();
         world.controller.handleAnimalTap(world.cat);
         world.controller.chooseCommand(CommandKind.interact);
-        world.controller.handleInteractableTap(world.routeSwitch);
+        world.controller.handleInteractableTap(world.lever);
 
         expect(world.controller.selectedTarget, isA<InteractableTarget>());
         expect(world.controller.canExecute, isFalse);
 
-        world.cat.position.setFrom(MayhemWorld.switchPosition);
+        world.cat.position.setFrom(MayhemWorld.leverPosition);
         expect(world.controller.canExecute, isTrue);
       },
     );

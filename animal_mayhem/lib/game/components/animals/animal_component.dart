@@ -11,6 +11,7 @@ import '../../systems/abilities/jump_ability.dart';
 import '../../systems/abilities/jump_motion.dart';
 import '../../systems/behavior/follow_target.dart';
 import '../../systems/command/command_kind.dart';
+import '../../systems/environment/force_capability.dart';
 import '../../systems/environment/movement_capabilities.dart';
 import '../../systems/environment/physical_profile.dart';
 import '../../systems/environment/terrain_kind.dart';
@@ -19,6 +20,7 @@ import '../../systems/interaction/interactable.dart';
 import '../environment/narrow_passage.dart';
 import '../objects/bridge_component.dart';
 import '../objects/obstacle_component.dart';
+import '../objects/pushable_component.dart';
 import 'animal_attributes.dart';
 import 'animal_state.dart';
 import 'selection_ring.dart';
@@ -34,6 +36,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     this.speciesName = 'Animal',
     this.capabilities = MovementCapabilities.landOnly,
     this.abilities = AnimalAbilities.walk,
+    this.force = ForceCapability.medium,
     this.jumpAbility,
     PhysicalProfile? profile,
     this.terrain,
@@ -57,11 +60,13 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
   final String speciesName;
   final MovementCapabilities capabilities;
   final AnimalAbilities abilities;
+  final ForceCapability force;
   final JumpAbility? jumpAbility;
   TerrainMap? terrain;
   List<ObstacleComponent> obstacles = <ObstacleComponent>[];
   List<NarrowPassage> passages = <NarrowPassage>[];
   List<BridgeComponent> bridges = <BridgeComponent>[];
+  List<PushableComponent> pushables = <PushableComponent>[];
   void Function(AnimalComponent animal)? onTapped;
   Rect worldBounds;
 
@@ -202,7 +207,7 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     );
   }
 
-  bool canOccupy(Vector2 point) {
+  bool canOccupy(Vector2 point, {bool ignorePushables = false}) {
     final TerrainMap? map = terrain;
     if (map != null &&
         !capabilities.canTraverse(map.kindAt(point)) &&
@@ -215,7 +220,11 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     if (isJumping) {
       return true;
     }
-    return !_blockedByObstacle(point, allowJumpable: false);
+    return !_blockedByObstacle(
+      point,
+      allowJumpable: false,
+      ignorePushables: ignorePushables,
+    );
   }
 
   @override
@@ -289,14 +298,25 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     position += velocity * dt;
     _constrainToWorldBounds();
     if (!canOccupy(position)) {
-      position.setFrom(previous);
-      velocity.setZero();
-      if (!_followMode) {
-        final Vector2 peek =
-            previous + toTarget.normalized() * math.min(4, distance);
-        if (!canOccupy(clampToInnerBounds(peek))) {
-          clearTarget();
-          return;
+      final PushableComponent? crate = _pushableAt(position);
+      final Vector2 delta = position - previous;
+      final bool pushed =
+          crate != null && force.canPushHeavy && crate.tryPush(delta);
+      if (pushed && canOccupy(position, ignorePushables: true)) {
+        // Heavy animal slid the crate and kept moving.
+      } else {
+        if (pushed) {
+          crate.undoLastPush();
+        }
+        position.setFrom(previous);
+        velocity.setZero();
+        if (!_followMode) {
+          final Vector2 peek =
+              previous + toTarget.normalized() * math.min(4, distance);
+          if (!canOccupy(clampToInnerBounds(peek))) {
+            clearTarget();
+            return;
+          }
         }
       }
     }
@@ -370,8 +390,15 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
     return true;
   }
 
-  bool _blockedByObstacle(Vector2 point, {required bool allowJumpable}) {
+  bool _blockedByObstacle(
+    Vector2 point, {
+    required bool allowJumpable,
+    bool ignorePushables = false,
+  }) {
     for (final ObstacleComponent obstacle in obstacles) {
+      if (ignorePushables && obstacle is PushableComponent) {
+        continue;
+      }
       if (!obstacle.containsWorldPoint(point)) {
         continue;
       }
@@ -381,6 +408,15 @@ class AnimalComponent extends PositionComponent with TapCallbacks {
       return true;
     }
     return false;
+  }
+
+  PushableComponent? _pushableAt(Vector2 point) {
+    for (final PushableComponent crate in pushables) {
+      if (crate.containsWorldPoint(point)) {
+        return crate;
+      }
+    }
+    return null;
   }
 
   void _refreshState() {

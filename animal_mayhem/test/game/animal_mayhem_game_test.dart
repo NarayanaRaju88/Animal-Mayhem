@@ -1,4 +1,5 @@
 import 'package:animal_mayhem/game/animal_mayhem_game.dart';
+import 'package:animal_mayhem/game/components/animals/buffalo_component.dart';
 import 'package:animal_mayhem/game/components/animals/cat_component.dart';
 import 'package:animal_mayhem/game/components/animals/dog_component.dart';
 import 'package:animal_mayhem/game/components/animals/duck_component.dart';
@@ -26,5 +27,6 @@ void main() {
     expect(game.world.duck, isA<DuckComponent>());
     expect(game.world.frog, isA<FrogComponent>());
     expect(game.world.cat, isA<CatComponent>());
+    expect(game.world.buffalo, isA<BuffaloComponent>());
   });
 }
