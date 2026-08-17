@@ -1,21 +1,23 @@
 class_name FollowCamera
 extends Node3D
+## Third-person orbit camera. Distance/height adapt per animal; ray avoids terrain.
 
 var target: Node3D
-var distance := 7.0
-var height := 2.4
-var yaw := 2.6
-var pitch := -0.35
+var distance := 5.6
+var height := 2.1
+var yaw := 2.55
+var pitch := -0.28
 var _look_drag := Vector2.ZERO
+var _cam: Camera3D
 
 
 func _ready() -> void:
-	var cam := Camera3D.new()
-	cam.name = "Camera3D"
-	cam.fov = 52.0
-	cam.near = 0.12
-	cam.far = 220.0
-	add_child(cam)
+	_cam = Camera3D.new()
+	_cam.name = "Camera3D"
+	_cam.fov = 48.0
+	_cam.near = 0.12
+	_cam.far = 180.0
+	add_child(_cam)
 
 
 func add_look(delta: Vector2) -> void:
@@ -25,15 +27,33 @@ func add_look(delta: Vector2) -> void:
 func _process(delta: float) -> void:
 	if target == null:
 		return
-	yaw -= _look_drag.x * 0.005
-	pitch = clampf(pitch - _look_drag.y * 0.004, -0.85, 0.15)
+	yaw -= _look_drag.x * 0.0045
+	pitch = clampf(pitch - _look_drag.y * 0.0035, -0.72, 0.12)
 	_look_drag = Vector2.ZERO
+	var look_height := height * 0.52
+	var pivot := target.global_position + Vector3(0.0, look_height, 0.0)
 	var offset := Vector3(
 		sin(yaw) * cos(pitch) * distance,
-		height + sin(-pitch) * distance * 0.35,
+		height + sin(-pitch) * distance * 0.28,
 		cos(yaw) * cos(pitch) * distance
 	)
-	var desired := target.global_position + offset
-	global_position = global_position.lerp(desired, 1.0 - exp(-delta * 5.5))
-	var look_at_pos := target.global_position + Vector3(0, height * 0.45, 0)
-	look_at(look_at_pos)
+	var desired := pivot + offset
+	var space := get_world_3d().direct_space_state
+	if space != null:
+		var q := PhysicsRayQueryParameters3D.create(pivot, desired)
+		q.collision_mask = 1
+		q.exclude = _exclude_target()
+		var hit := space.intersect_ray(q)
+		if not hit.is_empty():
+			desired = hit.position + (hit.normal as Vector3) * 0.45
+	global_position = global_position.lerp(desired, 1.0 - exp(-delta * 6.2))
+	var look_at_pos := target.global_position + Vector3(0.0, look_height, 0.0)
+	if global_position.distance_to(look_at_pos) > 0.08:
+		look_at(look_at_pos)
+
+
+func _exclude_target() -> Array[RID]:
+	var out: Array[RID] = []
+	if target is CollisionObject3D:
+		out.append((target as CollisionObject3D).get_rid())
+	return out

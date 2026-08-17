@@ -59,7 +59,7 @@ This environment does not ship Android export templates; export is intended on a
 | Monkey | Climb | Reaches the high rock |
 | Snake | Narrow gap + coil | Slips the rock split and coils the post |
 
-Meshes are **project-owned** (Godot primitives assembled into recognizable silhouettes). They are a **temporary art interface** for later licensed realistic GLTF.
+Meshes are **project-owned constructed animals** with generated hide/fur/scale maps (`AnimalVisuals`). They are **not** scanned GLTF. Jungle ground, bark, rock, grass, and sky use **Poly Haven CC0** 1K textures and HDRI. See `ASSETS.md`.
 
 ## Current mission
 
@@ -69,8 +69,9 @@ Camp → blocked path (Buffalo push) → high rocks (Monkey climb) → narrow ga
 
 ## Asset licensing
 
-- Code, assembled meshes, materials, shaders: project-owned.
-- Audio: original procedural WAV generated for this repository (not copied from other games or films).
+- Code, assembled animal meshes, shaders: project-owned.
+- Jungle PBR textures and rainforest HDRI: Poly Haven, CC0 (listed in `ASSETS.md`).
+- Animal albedo maps and all audio: original / project-generated.
 - No purchased packs, no scraped images, no third-party characters.
 
 See `ASSETS.md`.
@@ -78,8 +79,8 @@ See `ASSETS.md`.
 ## Known limitations
 
 - Animal bodies are constructed meshes, not scanned/realistic GLTF. Faces and fur are simplified.
-- Vegetation is instanced primitives, not photogrammetry.
-- Inactive animals wait in place (no follow-AI yet).
+- Vegetation uses instanced / procedural meshes with CC0 tiling textures, not photogrammetry trees.
+- Inactive animals wait in place (no follow-AI — out of visual-pass scope).
 - One jungle, one mission, three animals — by design.
 - Android APK is not built in this cloud environment (no export templates / SDK).
 

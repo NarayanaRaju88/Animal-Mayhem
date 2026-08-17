@@ -28,6 +28,8 @@ func _ready() -> void:
 	GameState.mission_completed.connect(_on_complete)
 	_on_objective(GameState.objective_text())
 	print("ANIMAL_MAYHEM_2_WORLD_READY animals=", animals.size())
+	if OS.get_environment("AM2_SCREENSHOT") != "":
+		call_deferred("_capture_screenshot")
 
 
 func _spawn_animals() -> void:
@@ -55,8 +57,13 @@ func _process(delta: float) -> void:
 	probe.global_position = active.global_position + Vector3(0, 0.6, 0)
 	probe.scan(active)
 	hud.call("set_action", probe.current != null, GameState.action_label_for(probe.current_ability))
-	var near_water := active.global_position.distance_to(Vector3(26, 0, -9)) < 14.0
-	AudioManager.set_near_water(near_water)
+	var d_water := active.global_position.distance_to(Vector3(26, 0, -9))
+	var water_amt := clampf(1.0 - d_water / 16.0, 0.0, 1.0)
+	var from_camp := Vector2(active.global_position.x, active.global_position.z).length()
+	var forest_amt := clampf((from_camp - 6.0) / 22.0, 0.4, 1.0)
+	if water_amt > 0.35:
+		forest_amt *= 0.72
+	AudioManager.set_mix(water_amt, forest_amt)
 	if camera.target:
 		camera.distance = lerp(camera.distance, active.definition.camera_distance, 1.0 - exp(-delta * 3.0))
 		camera.height = lerp(camera.height, active.definition.camera_height, 1.0 - exp(-delta * 3.0))
@@ -112,10 +119,18 @@ func _switch(index: int, instant := false) -> void:
 		animals[i].active = i == index
 	var a := animals[index]
 	camera.target = a
+	camera.distance = a.definition.camera_distance
+	camera.height = a.definition.camera_height
 	if instant:
-		camera.global_position = a.global_position + Vector3(0, a.definition.camera_height, a.definition.camera_distance)
-	AudioManager.play_sfx("sfx_switch")
-	AudioManager.play_animal(a.definition.id)
+		var look_height := a.definition.camera_height * 0.52
+		camera.global_position = a.global_position + Vector3(0, look_height, 0) + Vector3(
+			sin(camera.yaw) * camera.distance,
+			a.definition.camera_height,
+			cos(camera.yaw) * camera.distance
+		)
+	else:
+		AudioManager.play_sfx("sfx_switch")
+		AudioManager.play_animal(a.definition.id)
 	if hud:
 		hud.call("set_animal", index, a.definition.display_name)
 
@@ -141,3 +156,14 @@ func _make_hud() -> void:
 	hud.look_moved.connect(func (rel: Vector2) -> void:
 		camera.add_look(rel)
 	)
+
+
+func _capture_screenshot() -> void:
+	await get_tree().create_timer(1.2).timeout
+	var img := get_viewport().get_texture().get_image()
+	if img == null:
+		print("ANIMAL_MAYHEM_2_SCREENSHOT_FAIL")
+		return
+	var path := OS.get_environment("AM2_SCREENSHOT")
+	img.save_png(path)
+	print("ANIMAL_MAYHEM_2_SCREENSHOT ", path)

@@ -16,9 +16,7 @@ func _ready() -> void:
 	add_child(shape)
 	_visual = Node3D.new()
 	add_child(_visual)
-	var bark := StandardMaterial3D.new()
-	bark.albedo_color = Color(0.32, 0.2, 0.1)
-	bark.roughness = 0.9
+	var bark := MaterialLibrary.pbr("bark_willow", 1.4)
 	var logm := CylinderMesh.new()
 	logm.top_radius = 0.42
 	logm.bottom_radius = 0.48
@@ -31,8 +29,8 @@ func _ready() -> void:
 	_visual.add_child(mi)
 	var leaves := SphereMesh.new()
 	leaves.radius = 1.1
-	var lm := StandardMaterial3D.new()
-	lm.albedo_color = Color(0.18, 0.38, 0.14)
+	var lm := MaterialLibrary.pbr("leafy_grass", 0.9)
+	lm.albedo_color = Color(0.42, 0.55, 0.28)
 	var canopy := MeshInstance3D.new()
 	canopy.mesh = leaves
 	canopy.material_override = lm
