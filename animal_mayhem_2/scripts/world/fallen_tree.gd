@@ -36,6 +36,25 @@ func _ready() -> void:
 	canopy.material_override = lm
 	canopy.position = Vector3(3.6, 1.1, 0.4)
 	_visual.add_child(canopy)
+	for i in 4:
+		var br := MeshInstance3D.new()
+		var bc := CylinderMesh.new()
+		bc.top_radius = 0.05
+		bc.bottom_radius = 0.09
+		bc.height = 1.4 + i * 0.25
+		br.mesh = bc
+		br.material_override = bark
+		br.position = Vector3(-1.2 + i * 0.9, 0.7, 0.15 * (1 if i % 2 == 0 else -1))
+		br.rotation_degrees = Vector3(70, 40 * i, 18)
+		_visual.add_child(br)
+	var rootball := MeshInstance3D.new()
+	var rb := SphereMesh.new()
+	rb.radius = 0.55
+	rootball.mesh = rb
+	rootball.material_override = bark
+	rootball.position = Vector3(-3.8, 0.35, 0)
+	rootball.scale = Vector3(1.2, 0.7, 1.1)
+	_visual.add_child(rootball)
 
 
 func push(animal: AnimalController) -> void:
@@ -44,6 +63,28 @@ func push(animal: AnimalController) -> void:
 	moved = true
 	AudioManager.play_sfx("sfx_push")
 	AudioManager.play_animal(&"buffalo")
+	animal.play_action("push")
+	var dust := GPUParticles3D.new()
+	dust.amount = 18
+	dust.lifetime = 0.9
+	dust.one_shot = true
+	dust.emitting = true
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(0, 1, 0.4)
+	pm.spread = 50.0
+	pm.initial_velocity_min = 0.4
+	pm.initial_velocity_max = 1.4
+	pm.gravity = Vector3(0, -2.0, 0)
+	pm.scale_min = 0.06
+	pm.scale_max = 0.16
+	pm.color = Color(0.42, 0.34, 0.22, 0.4)
+	dust.process_material = pm
+	var sm := SphereMesh.new()
+	sm.radius = 0.06
+	sm.height = 0.12
+	dust.draw_pass_1 = sm
+	dust.position = Vector3(0, 0.4, 0)
+	add_child(dust)
 	var tw := create_tween()
 	tw.tween_property(self, "position:z", position.z + 6.5, 1.1)
 	tw.parallel().tween_property(self, "rotation_degrees:y", 28.0, 1.1)

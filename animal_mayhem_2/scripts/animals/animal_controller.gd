@@ -11,8 +11,15 @@ var _phase := 0.0
 var _foot_t := 0.0
 var _idle_snd := 0.0
 var _dust: GPUParticles3D
+var action_name := ""
+var _action_t := 0.0
 
 var abilities: Array[Ability] = []
+
+
+func play_action(kind: String) -> void:
+	action_name = kind
+	_action_t = 0.0
 
 
 func setup(def: AnimalDefinition, player_session: JungleWorld) -> void:
@@ -118,40 +125,42 @@ func _physics_process(delta: float) -> void:
 	velocity.x = move_toward(velocity.x, desired.x, accel * delta * definition.move_speed)
 	velocity.z = move_toward(velocity.z, desired.z, accel * delta * definition.move_speed)
 	move_and_slide()
-	_animate(delta, moving)
+	_animate(delta, moving, desired.length())
 
 
-func _animate(delta: float, moving: float) -> void:
+func _animate(delta: float, moving: float, speed: float) -> void:
 	var run := moving > 0.1
-	_phase += delta * (9.5 if run else 2.0)
+	if action_name != "":
+		_action_t += delta
+		if _action_t > 1.15:
+			action_name = ""
+	var gait := (speed / maxf(definition.move_speed, 0.1)) if run else 0.0
+	_phase += delta * (2.0 + gait * 8.5)
 	_idle_snd += delta
-	if active and _idle_snd > 11.0 and not run:
+	if active and _idle_snd > 11.0 and not run and action_name == "":
 		_idle_snd = 0.0
 		AudioManager.play_animal(definition.id)
-	var breath := sin(_phase) * (0.012 if not run else 0.004)
 	if definition.id == &"snake":
-		_visual.position.y = 0.01
-		var segs := _visual.get_node_or_null("Segments")
-		if segs:
-			var i := 0
-			for c in segs.get_children():
-				var amp := 0.16 if run else 0.045
-				c.position.x = sin(_phase * 2.2 + i * 0.55) * amp
-				c.position.y = 0.17 + abs(sin(_phase * 1.6 + i * 0.4)) * (0.04 if run else 0.012)
-				i += 1
-		var hd := _visual.get_node_or_null("Head")
-		if hd:
-			hd.rotation_degrees.y = sin(_phase * 0.7) * (18.0 if run else 6.0)
-			var tongue := hd.get_node_or_null("Tongue")
-			if tongue:
-				tongue.scale.z = 1.0 + abs(sin(_phase * 6.0)) * 0.8
+		_animate_snake(run)
 		return
+	var breath := sin(_phase) * (0.01 if not run else 0.003)
 	_visual.position.y = breath
 	var head := _visual.get_node_or_null("Head")
 	if head:
-		head.rotation_degrees.y = sin(_phase * 0.45) * (8.0 if not run else 3.0)
-		head.rotation_degrees.x = sin(_phase * 0.3) * 3.0
-	var swing := sin(_phase * 2.0) * (22.0 if run else 0.0)
+		if action_name == "push":
+			head.rotation_degrees.x = lerpf(head.rotation_degrees.x, 22.0, 0.15)
+			head.rotation_degrees.y = 0.0
+		elif action_name == "climb":
+			head.rotation_degrees.x = -12.0
+			head.rotation_degrees.y = sin(_phase * 3.0) * 8.0
+		else:
+			head.rotation_degrees.y = sin(_phase * 0.45) * (8.0 if not run else 3.0)
+			head.rotation_degrees.x = sin(_phase * 0.3) * 3.0
+	var swing := sin(_phase * 2.0) * (8.0 + gait * 20.0)
+	if action_name == "climb":
+		swing = sin(_phase * 4.2) * 38.0
+	if action_name == "push":
+		swing = sin(_phase * 3.0) * 8.0
 	for nm in ["LegFL", "LegBR", "LegL", "ArmR"]:
 		var n := _visual.get_node_or_null(nm)
 		if n:
@@ -167,7 +176,42 @@ func _animate(delta: float, moving: float) -> void:
 		_dust.emitting = run and active
 	if run:
 		_foot_t += delta
-		if _foot_t > 0.34:
+		if _foot_t > lerpf(0.42, 0.26, gait):
 			_foot_t = 0.0
 			if active:
 				AudioManager.play_sfx("sfx_footstep")
+
+
+func _animate_snake(run: bool) -> void:
+	_visual.position.y = 0.0
+	var segs := _visual.get_node_or_null("Segments")
+	var coil := action_name == "coil"
+	if segs:
+		var i := 0
+		for c in segs.get_children():
+			if coil:
+				var ang := i * 0.55 + _action_t * 7.0
+				c.position = Vector3(cos(ang) * 0.26, 0.12 + i * 0.035, sin(ang) * 0.26)
+				c.rotation_degrees = Vector3(90, rad_to_deg(ang), 0)
+			else:
+				var amp := 0.22 if run else 0.05
+				var wave := sin(_phase * 2.4 + i * 0.62)
+				var wave2 := sin(_phase * 2.4 + (i + 1) * 0.62)
+				c.position.x = wave * amp
+				c.position.y = 0.14
+				c.position.z = -i * 0.2
+				c.rotation_degrees.y = rad_to_deg(atan2((wave2 - wave) * amp, -0.2))
+				c.rotation_degrees.x = 90.0
+			i += 1
+	var hd := _visual.get_node_or_null("Head")
+	if hd:
+		if coil:
+			hd.position = Vector3(0.28, 0.22, 0.0)
+			hd.rotation_degrees.y = _action_t * 120.0
+		else:
+			hd.position = Vector3(0, 0.16, 0.28)
+			hd.rotation_degrees.y = sin(_phase * 0.9) * (16.0 if run else 5.0)
+			hd.rotation_degrees.x = sin(_phase * 1.1) * (6.0 if run else 2.0)
+		var tongue := hd.get_node_or_null("Tongue")
+		if tongue:
+			tongue.scale.z = 1.0 + abs(sin(_phase * 6.0)) * 0.9
