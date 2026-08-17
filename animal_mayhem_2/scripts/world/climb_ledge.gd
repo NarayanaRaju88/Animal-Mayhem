@@ -13,9 +13,7 @@ func _ready() -> void:
 	shape.shape = box
 	shape.position = Vector3(0, 2.2, 0)
 	add_child(shape)
-	var rock := StandardMaterial3D.new()
-	rock.albedo_color = Color(0.38, 0.34, 0.28)
-	rock.roughness = 0.92
+	var rock := MaterialLibrary.pbr("mossy_rock", 0.65)
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(4.2, 4.4, 3.2)
 	var mi := MeshInstance3D.new()
@@ -27,8 +25,8 @@ func _ready() -> void:
 	lip.size = Vector3(4.4, 0.25, 1.1)
 	var mi2 := MeshInstance3D.new()
 	mi2.mesh = lip
-	var moss := StandardMaterial3D.new()
-	moss.albedo_color = Color(0.25, 0.4, 0.18)
+	var moss := MaterialLibrary.pbr("leafy_grass", 1.3)
+	moss.albedo_color = Color(0.4, 0.52, 0.28)
 	mi2.material_override = moss
 	mi2.position = Vector3(0, 4.45, 1.1)
 	add_child(mi2)

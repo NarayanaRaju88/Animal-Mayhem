@@ -14,8 +14,7 @@ func _ready() -> void:
 	col.shape = cyl
 	col.position = Vector3(0, 0.8, 0)
 	add_child(col)
-	var wood := StandardMaterial3D.new()
-	wood.albedo_color = Color(0.28, 0.18, 0.08)
+	var wood := MaterialLibrary.pbr("bark_brown_01", 1.8)
 	var mesh := CylinderMesh.new()
 	mesh.top_radius = 0.16
 	mesh.bottom_radius = 0.2

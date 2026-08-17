@@ -6,6 +6,7 @@ signal animal_selected(index: int)
 signal look_moved(relative: Vector2)
 
 var joystick_active := false
+var _intro_t := 0.0
 
 @onready var objective: Label = $Root/TopBar/Objective
 @onready var animal_name: Label = $Root/TopBar/AnimalName
@@ -26,6 +27,44 @@ func _ready() -> void:
 		var b: Button = portraits.get_child(i)
 		var idx := i
 		b.pressed.connect(func () -> void: animal_selected.emit(idx))
+	_style_controls()
+
+
+func _process(delta: float) -> void:
+	_intro_t += delta
+	if has_node("Root/Intro"):
+		var intro: Control = $Root/Intro
+		if _intro_t < 4.2:
+			intro.modulate.a = 1.0
+		else:
+			intro.modulate.a = maxf(0.0, intro.modulate.a - delta * 0.7)
+			if intro.modulate.a <= 0.02:
+				intro.visible = false
+
+
+func _style_controls() -> void:
+	var panel := StyleBoxFlat.new()
+	panel.bg_color = Color(0.07, 0.1, 0.08, 0.42)
+	panel.set_corner_radius_all(18)
+	panel.set_content_margin_all(8)
+	if has_node("Root/TopBarBg"):
+		$Root/TopBarBg.add_theme_stylebox_override("panel", panel)
+	var ring := StyleBoxFlat.new()
+	ring.bg_color = Color(0.08, 0.12, 0.09, 0.28)
+	ring.set_border_width_all(2)
+	ring.border_color = Color(0.85, 0.82, 0.62, 0.35)
+	ring.set_corner_radius_all(90)
+	$Root/Joystick/Ring.add_theme_stylebox_override("panel", ring)
+	var knob := StyleBoxFlat.new()
+	knob.bg_color = Color(0.92, 0.88, 0.7, 0.55)
+	knob.set_corner_radius_all(40)
+	$Root/Joystick/Knob.add_theme_stylebox_override("panel", knob)
+	var act := StyleBoxFlat.new()
+	act.bg_color = Color(0.18, 0.22, 0.14, 0.72)
+	act.set_corner_radius_all(64)
+	act.set_border_width_all(2)
+	act.border_color = Color(0.9, 0.82, 0.45, 0.7)
+	action_btn.add_theme_stylebox_override("normal", act)
 
 
 func set_objective(text: String) -> void:
@@ -36,8 +75,8 @@ func set_animal(index: int, display: String) -> void:
 	animal_name.text = display
 	for i in portraits.get_child_count():
 		var b: Button = portraits.get_child(i)
-		b.modulate = Color(1.15, 1.12, 0.9) if i == index else Color(0.75, 0.8, 0.75)
-		b.scale = Vector2(1.08, 1.08) if i == index else Vector2.ONE
+		b.modulate = Color(1.18, 1.12, 0.82) if i == index else Color(0.62, 0.68, 0.6, 0.85)
+		b.scale = Vector2(1.06, 1.06) if i == index else Vector2(0.94, 0.94)
 
 
 func set_action(show: bool, label: String) -> void:
