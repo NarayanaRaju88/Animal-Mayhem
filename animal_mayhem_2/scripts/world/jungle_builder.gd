@@ -105,12 +105,7 @@ func _terrain() -> void:
 	var mesh := st.commit()
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
-	var mat := MaterialLibrary.pbr("forest_ground_04", 0.12)
-	mat.uv1_scale = Vector3(0.12, 0.12, 0.12)
-	mat.uv1_triplanar = true
-	mat.uv1_world_triplanar = true
-	mat.uv1_triplanar_sharpness = 4.0
-	mi.material_override = mat
+	mi.material_override = MaterialLibrary.terrain_blend()
 	add_child(mi)
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
@@ -118,14 +113,30 @@ func _terrain() -> void:
 	col.shape = mesh.create_trimesh_shape()
 	body.add_child(col)
 	add_child(body)
-	var path := BoxMesh.new()
-	path.size = Vector3(52, 0.07, 3.6)
-	var pmi := MeshInstance3D.new()
-	pmi.mesh = path
-	var pm := MaterialLibrary.pbr("grass_path_3", 3.0)
-	pmi.material_override = pm
-	pmi.position = Vector3(16, 0.24, 0)
-	add_child(pmi)
+	_trail_dressing()
+
+
+func _trail_dressing() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	for i in 14:
+		var x := -2.0 + i * 3.4
+		var z := sin(i * 0.7) * 0.45
+		_rock(Vector3(x, height_at(x, z + 1.6), z + 1.6), rng, 0.35)
+		if i % 2 == 0:
+			_rock(Vector3(x + 0.8, height_at(x + 0.8, z - 1.5), z - 1.5), rng, 0.28)
+	for i in 8:
+		var x := 2.0 + i * 5.0
+		var logm := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.05
+		cyl.bottom_radius = 0.08
+		cyl.height = rng.randf_range(0.9, 1.6)
+		logm.mesh = cyl
+		logm.material_override = MaterialLibrary.pbr("bark_willow", 1.8)
+		logm.position = Vector3(x, height_at(x, 1.8) + 0.08, 1.8)
+		logm.rotation_degrees = Vector3(82, rng.randf() * 360.0, 8)
+		add_child(logm)
 
 
 func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
@@ -146,40 +157,66 @@ func _water() -> void:
 	sh.code = """
 shader_type spatial;
 render_mode blend_mix, specular_schlick_ggx, cull_disabled, depth_draw_opaque;
-uniform vec4 shallow : source_color = vec4(0.14, 0.32, 0.30, 0.78);
-uniform vec4 deep : source_color = vec4(0.05, 0.14, 0.18, 0.9);
+uniform vec4 shallow : source_color = vec4(0.16, 0.34, 0.30, 0.78);
+uniform vec4 deep : source_color = vec4(0.04, 0.12, 0.16, 0.92);
 void vertex() {
-	VERTEX.y += sin(TIME * 1.1 + VERTEX.x * 0.45 + VERTEX.z * 0.3) * 0.05;
-	VERTEX.y += sin(TIME * 1.7 + VERTEX.z * 0.8) * 0.02;
+	VERTEX.y += sin(TIME * 1.05 + VERTEX.x * 0.38 + VERTEX.z * 0.28) * 0.045;
+	VERTEX.y += sin(TIME * 1.6 + VERTEX.z * 0.7) * 0.018;
 }
 void fragment() {
-	float w = 0.5 + 0.5 * sin(UV.x * 22.0 + TIME * 0.55);
-	float spec = 0.5 + 0.5 * sin(UV.y * 14.0 - TIME * 0.8);
-	ALBEDO = mix(deep.rgb, shallow.rgb, w * spec);
-	ROUGHNESS = 0.06 + spec * 0.08;
-	METALLIC = 0.08;
-	SPECULAR = 0.7;
-	ALPHA = 0.82;
-	EMISSION = ALBEDO * 0.035;
+	float w = 0.5 + 0.5 * sin(UV.x * 18.0 + TIME * 0.5);
+	float spec = 0.5 + 0.5 * sin(UV.y * 11.0 - TIME * 0.72);
+	float shore = smoothstep(0.08, 0.42, abs(UV.x - 0.5) + abs(UV.y - 0.5) * 0.7);
+	ALBEDO = mix(deep.rgb, shallow.rgb, w * spec * 0.65 + shore * 0.35);
+	ROUGHNESS = 0.05 + spec * 0.1 + shore * 0.12;
+	METALLIC = 0.04;
+	SPECULAR = 0.72;
+	ALPHA = mix(0.88, 0.72, shore);
+	EMISSION = ALBEDO * 0.03;
 }
 """
 	var mat := ShaderMaterial.new()
 	mat.shader = sh
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(20, 13)
-	plane.subdivide_width = 32
-	plane.subdivide_depth = 20
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var res := 18
+	for iz in range(res):
+		for ix in range(res):
+			var x0 := 17.5 + ix * (17.0 / res)
+			var z0 := -15.5 + iz * (12.5 / res)
+			var x1 := x0 + 17.0 / res
+			var z1 := z0 + 12.5 / res
+			if height_at((x0 + x1) * 0.5, (z0 + z1) * 0.5) > 0.12:
+				continue
+			var y := -0.22
+			_tri(st, Vector3(x0, y, z0), Vector3(x1, y, z0), Vector3(x1, y, z1))
+			_tri(st, Vector3(x0, y, z0), Vector3(x1, y, z1), Vector3(x0, y, z1))
+	st.generate_normals()
+	var mesh := st.commit()
 	var mi := MeshInstance3D.new()
-	mi.mesh = plane
+	mi.mesh = mesh
 	mi.material_override = mat
-	mi.position = Vector3(26, -0.28, -9)
 	add_child(mi)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3
-	for i in range(10):
+	for i in range(16):
 		var x := 18.0 + rng.randf() * 16.0
 		var z := -15.0 + rng.randf() * 12.0
-		_rock(Vector3(x, height_at(x, z), z), rng, 0.7)
+		_rock(Vector3(x, height_at(x, z), z), rng, rng.randf_range(0.45, 0.95))
+	for i in 10:
+		var x := 19.0 + rng.randf() * 14.0
+		var z := -14.5 + (0.0 if i % 2 == 0 else 11.0)
+		var reed := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.015
+		cyl.bottom_radius = 0.03
+		cyl.height = rng.randf_range(0.7, 1.3)
+		reed.mesh = cyl
+		var rm := MaterialLibrary.pbr("leafy_grass", 2.0)
+		rm.albedo_color = Color(0.35, 0.48, 0.22)
+		reed.material_override = rm
+		reed.position = Vector3(x, height_at(x, z) + cyl.height * 0.45, z)
+		add_child(reed)
 
 
 func _vegetation() -> void:
@@ -212,7 +249,8 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 	var bark_stem := "bark_willow" if rng.randf() > 0.45 else "bark_brown_01"
 	var bark := MaterialLibrary.pbr(bark_stem, rng.randf_range(1.4, 2.4))
 	bark.albedo_color = Color(0.92, 0.88, 0.82).darkened(rng.randf() * 0.18)
-	var leaf := MaterialLibrary.pbr("leafy_grass", rng.randf_range(0.8, 1.6))
+	var leaf_stem := "forest_leaves_03" if rng.randf() > 0.4 else "leafy_grass"
+	var leaf := MaterialLibrary.pbr(leaf_stem, rng.randf_range(0.8, 1.6))
 	leaf.albedo_color = Color(0.62, 0.72, 0.48).lightened(rng.randf() * 0.12)
 	leaf.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var trunk := CylinderMesh.new()
@@ -250,10 +288,23 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 		smi.scale = Vector3(rng.randf_range(0.85, 1.25), rng.randf_range(0.65, 1.05), rng.randf_range(0.85, 1.25))
 		smi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		root.add_child(smi)
+	if rng.randf() > 0.62:
+		for v in range(2 + rng.randi() % 2):
+			var vine := MeshInstance3D.new()
+			var vc := CylinderMesh.new()
+			vc.top_radius = 0.02
+			vc.bottom_radius = 0.035
+			vc.height = rng.randf_range(1.6, 2.8)
+			vine.mesh = vc
+			vine.material_override = MaterialLibrary.pbr("bark_willow", 3.0)
+			vine.position = Vector3(rng.randf_range(-0.4, 0.4), trunk.height * 0.45, rng.randf_range(0.2, 0.5))
+			vine.rotation_degrees = Vector3(12, rng.randf() * 50.0, rng.randf_range(-8, 8))
+			root.add_child(vine)
 
 
 func _rock(pos: Vector3, rng: RandomNumberGenerator, scale_mul: float = 1.0) -> void:
-	var mat := MaterialLibrary.pbr("mossy_rock", rng.randf_range(0.7, 1.4))
+	var stem := "mossy_rock" if rng.randf() > 0.45 else "aerial_rocks_02"
+	var mat := MaterialLibrary.pbr(stem, rng.randf_range(0.7, 1.4))
 	mat.albedo_color = Color(0.88, 0.9, 0.82)
 	var box := SphereMesh.new()
 	box.radius = rng.randf_range(0.4, 1.15) * scale_mul
@@ -359,7 +410,7 @@ func _landmark() -> void:
 	sph.radius = 5.5
 	sph.height = 7.5
 	canopy.mesh = sph
-	var leaf := MaterialLibrary.pbr("leafy_grass", 0.5)
+	var leaf := MaterialLibrary.pbr("forest_leaves_03", 0.5)
 	leaf.albedo_color = Color(0.32, 0.44, 0.2)
 	canopy.material_override = leaf
 	canopy.position = Vector3(-16.0, height_at(-16.0, -10.0) + 16.0, -10.0)
@@ -419,43 +470,121 @@ func _atmosphere() -> void:
 
 
 func _camp() -> void:
-	var stone := MaterialLibrary.pbr("mossy_rock", 1.8)
-	for i in range(8):
-		var ang := i * TAU / 8.0
+	var hy := height_at(0, 0)
+	var pad := MeshInstance3D.new()
+	var disc := CylinderMesh.new()
+	disc.top_radius = 3.2
+	disc.bottom_radius = 3.2
+	disc.height = 0.05
+	pad.mesh = disc
+	pad.material_override = MaterialLibrary.pbr("brown_mud_03", 2.4)
+	pad.position = Vector3(0, hy + 0.03, 0)
+	add_child(pad)
+	var stone := MaterialLibrary.pbr("aerial_rocks_02", 1.6)
+	for i in range(10):
+		var ang := i * TAU / 10.0
 		var sph := SphereMesh.new()
-		sph.radius = 0.18
+		sph.radius = 0.16 + (i % 3) * 0.03
 		var mi := MeshInstance3D.new()
 		mi.mesh = sph
 		mi.material_override = stone
-		mi.position = Vector3(cos(ang) * 0.7, height_at(0, 0) + 0.12, sin(ang) * 0.7)
+		mi.position = Vector3(cos(ang) * 0.72, hy + 0.12, sin(ang) * 0.72)
+		mi.scale = Vector3(1.1, 0.55, 1.0)
 		add_child(mi)
+	for i in 3:
+		var logm := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.04
+		cyl.bottom_radius = 0.05
+		cyl.height = 0.7
+		logm.mesh = cyl
+		logm.material_override = MaterialLibrary.pbr("bark_brown_01", 2.2)
+		logm.position = Vector3(0, hy + 0.28, 0)
+		logm.rotation_degrees = Vector3(55, i * 120.0, 0)
+		add_child(logm)
 	var fire := OmniLight3D.new()
-	fire.light_color = Color(1.0, 0.55, 0.2)
-	fire.light_energy = 1.15
-	fire.omni_range = 5.5
+	fire.light_color = Color(1.0, 0.52, 0.2)
+	fire.light_energy = 1.05
+	fire.omni_range = 5.2
 	fire.shadow_enabled = false
-	fire.position = Vector3(0, 0.8, 0)
+	fire.position = Vector3(0, hy + 0.75, 0)
 	add_child(fire)
-	var tent := PrismMesh.new()
-	tent.size = Vector3(2.4, 1.6, 2.2)
+	var embers := GPUParticles3D.new()
+	embers.amount = 12
+	embers.lifetime = 1.4
+	embers.position = Vector3(0, hy + 0.35, 0)
+	var epm := ParticleProcessMaterial.new()
+	epm.direction = Vector3(0, 1, 0)
+	epm.spread = 18.0
+	epm.initial_velocity_min = 0.15
+	epm.initial_velocity_max = 0.45
+	epm.gravity = Vector3(0, 0.2, 0)
+	epm.scale_min = 0.02
+	epm.scale_max = 0.05
+	epm.color = Color(1.0, 0.45, 0.12, 0.7)
+	embers.process_material = epm
+	var es := SphereMesh.new()
+	es.radius = 0.03
+	es.height = 0.06
+	embers.draw_pass_1 = es
+	add_child(embers)
 	var canvas := StandardMaterial3D.new()
-	canvas.albedo_color = Color(0.62, 0.5, 0.34)
-	canvas.roughness = 0.92
+	canvas.albedo_color = Color(0.58, 0.46, 0.3)
+	canvas.roughness = 0.93
 	canvas.metallic = 0.0
+	var tent := PrismMesh.new()
+	tent.size = Vector3(2.6, 1.7, 2.3)
 	var tmi := MeshInstance3D.new()
 	tmi.mesh = tent
 	tmi.material_override = canvas
-	tmi.position = Vector3(-3.2, 0.95, -2.4)
+	tmi.position = Vector3(-3.3, hy + 0.9, -2.5)
 	tmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(tmi)
+	var flap := MeshInstance3D.new()
+	var flapm := BoxMesh.new()
+	flapm.size = Vector3(0.04, 1.1, 0.9)
+	flap.mesh = flapm
+	flap.material_override = canvas
+	flap.position = Vector3(-2.15, hy + 0.7, -2.5)
+	flap.rotation_degrees = Vector3(0, -18, 0)
+	add_child(flap)
 	var crate := MeshInstance3D.new()
 	var box := BoxMesh.new()
-	box.size = Vector3(0.7, 0.55, 0.7)
+	box.size = Vector3(0.7, 0.5, 0.7)
 	crate.mesh = box
 	crate.material_override = MaterialLibrary.pbr("bark_willow", 1.4)
-	crate.position = Vector3(-1.6, height_at(-1.6, -1.8) + 0.28, -1.8)
+	crate.position = Vector3(-1.5, hy + 0.28, -1.7)
 	crate.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	add_child(crate)
+	var bed := MeshInstance3D.new()
+	var bedm := BoxMesh.new()
+	bedm.size = Vector3(1.4, 0.08, 0.55)
+	bed.mesh = bedm
+	var bedmat := StandardMaterial3D.new()
+	bedmat.albedo_color = Color(0.35, 0.32, 0.24)
+	bedmat.roughness = 0.95
+	bed.material_override = bedmat
+	bed.position = Vector3(-2.6, hy + 0.1, -0.6)
+	add_child(bed)
+	var stump := MeshInstance3D.new()
+	var stc := CylinderMesh.new()
+	stc.top_radius = 0.28
+	stc.bottom_radius = 0.32
+	stc.height = 0.42
+	stump.mesh = stc
+	stump.material_override = MaterialLibrary.pbr("bark_brown_01", 1.5)
+	stump.position = Vector3(1.6, hy + 0.22, -1.1)
+	add_child(stump)
+	var lantern := OmniLight3D.new()
+	lantern.light_color = Color(1.0, 0.78, 0.45)
+	lantern.light_energy = 0.35
+	lantern.omni_range = 2.4
+	lantern.shadow_enabled = false
+	lantern.position = Vector3(-1.5, hy + 0.7, -1.7)
+	add_child(lantern)
+	for i in 4:
+		var ang := i * TAU / 4.0 + 0.4
+		_rock(Vector3(cos(ang) * 3.4, hy, sin(ang) * 3.4), RandomNumberGenerator.new(), 0.55)
 
 
 func _fallen_tree() -> FallenTree:
@@ -484,22 +613,34 @@ func _gap_wall() -> StaticBody3D:
 	wall.add_child(col)
 	wall.position = Vector3(31.5, height_at(31.5, -7), -7)
 	add_child(wall)
-	var rock := MaterialLibrary.pbr("mossy_rock", 0.7)
-	var left := BoxMesh.new()
-	left.size = Vector3(2.4, 3.4, 3.1)
-	var mi := MeshInstance3D.new()
-	mi.mesh = left
-	mi.material_override = rock
-	mi.position = Vector3(31.5, height_at(31.5, -4.2) + 1.7, -4.2)
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	add_child(mi)
-	var mi2 := MeshInstance3D.new()
-	mi2.mesh = left.duplicate()
-	mi2.material_override = rock
-	mi2.position = Vector3(31.5, height_at(31.5, -10.2) + 1.7, -10.2)
-	mi2.rotation_degrees = Vector3(0, 12, 4)
-	mi2.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	add_child(mi2)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 61
+	var wall_mat := MaterialLibrary.pbr("rock_wall_02", 0.65)
+	var moss := MaterialLibrary.pbr("aerial_rocks_02", 0.7)
+	for i in 8:
+		var side := -1.0 if i < 4 else 1.0
+		var mi := MeshInstance3D.new()
+		var sph := SphereMesh.new()
+		sph.radius = rng.randf_range(0.7, 1.4)
+		mi.mesh = sph
+		mi.material_override = wall_mat if i % 2 == 0 else moss
+		var z := -7.0 + side * 2.8 + rng.randf_range(-0.4, 0.4)
+		mi.position = Vector3(31.5 + rng.randf_range(-0.4, 0.4), height_at(31.5, z) + rng.randf_range(0.8, 1.8), z)
+		mi.scale = Vector3(rng.randf_range(1.1, 1.7), rng.randf_range(0.7, 1.3), rng.randf_range(1.0, 1.5))
+		mi.rotation_degrees = Vector3(rng.randf_range(-18, 18), rng.randf() * 360.0, rng.randf_range(-12, 12))
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		add_child(mi)
+	for i in 6:
+		var vine := MeshInstance3D.new()
+		var vc := CylinderMesh.new()
+		vc.top_radius = 0.025
+		vc.bottom_radius = 0.04
+		vc.height = rng.randf_range(1.5, 2.6)
+		vine.mesh = vc
+		vine.material_override = MaterialLibrary.pbr("bark_willow", 2.4)
+		vine.position = Vector3(31.5, height_at(31.5, -7.0) + 2.2, -7.0 + rng.randf_range(-2.2, 2.2))
+		vine.rotation_degrees = Vector3(8, 0, rng.randf_range(-10, 10))
+		add_child(vine)
 	return wall
 
 
@@ -513,22 +654,38 @@ func _coil() -> CoilPost:
 func _vine_gate() -> Node3D:
 	var g := Node3D.new()
 	g.position = Vector3(38.5, height_at(38.5, 0), 0)
-	var mat := MaterialLibrary.pbr("leafy_grass", 1.1)
-	mat.albedo_color = Color(0.28, 0.42, 0.18)
-	var box := BoxMesh.new()
-	box.size = Vector3(1.2, 4.5, 7.0)
-	var mi := MeshInstance3D.new()
-	mi.mesh = box
-	mi.material_override = mat
-	mi.position = Vector3(0, 2.2, 0)
-	g.add_child(mi)
+	var leaf := MaterialLibrary.pbr("forest_leaves_03", 1.0)
+	leaf.albedo_color = Color(0.4, 0.52, 0.28)
+	var bark := MaterialLibrary.pbr("bark_willow", 1.8)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9
+	for i in 16:
+		var vine := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = rng.randf_range(0.04, 0.08)
+		cyl.bottom_radius = rng.randf_range(0.06, 0.11)
+		cyl.height = rng.randf_range(3.6, 5.0)
+		vine.mesh = cyl
+		vine.material_override = bark if i % 3 == 0 else leaf
+		vine.position = Vector3(rng.randf_range(-0.35, 0.35), cyl.height * 0.45, rng.randf_range(-3.1, 3.1))
+		vine.rotation_degrees = Vector3(rng.randf_range(-8, 8), rng.randf() * 30.0, rng.randf_range(-10, 10))
+		vine.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		g.add_child(vine)
+	for i in 8:
+		var tuft := MeshInstance3D.new()
+		var sph := SphereMesh.new()
+		sph.radius = rng.randf_range(0.25, 0.45)
+		tuft.mesh = sph
+		tuft.material_override = leaf
+		tuft.position = Vector3(rng.randf_range(-0.3, 0.3), rng.randf_range(1.2, 3.8), rng.randf_range(-3.0, 3.0))
+		g.add_child(tuft)
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
 	var col := CollisionShape3D.new()
 	var sh := BoxShape3D.new()
-	sh.size = box.size
+	sh.size = Vector3(1.2, 4.5, 7.0)
 	col.shape = sh
-	col.position = mi.position
+	col.position = Vector3(0, 2.2, 0)
 	body.add_child(col)
 	g.add_child(body)
 	add_child(g)

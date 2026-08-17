@@ -59,7 +59,7 @@ This environment does not ship Android export templates; export is intended on a
 | Monkey | Climb | Reaches the high rock |
 | Snake | Narrow gap + coil | Slips the rock split and coils the post |
 
-Meshes are **project-owned constructed animals** with generated hide/fur/scale maps (`AnimalVisuals`). They are **not** scanned GLTF. Jungle ground, bark, rock, grass, and sky use **Poly Haven CC0** 1K textures and HDRI. See `ASSETS.md`.
+Meshes are **project-owned constructed animals** (`AnimalVisuals`) with generated hide/fur/scale maps. **No licensed photogrammetry animal GLTF** passed the PR #18 audit. Jungle materials use Poly Haven CC0 textures (including mud, leaves, rock wall). See `ASSETS.md`.
 
 ## Current mission
 

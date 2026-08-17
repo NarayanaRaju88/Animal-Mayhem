@@ -46,6 +46,7 @@ func coil(animal: AnimalController) -> void:
 	coiled = true
 	AudioManager.play_sfx("sfx_coil")
 	AudioManager.play_animal(&"snake")
+	animal.play_action("coil")
 	var tw := create_tween()
 	tw.tween_property(animal, "global_position", global_position + Vector3(0.35, 0.05, 0), 0.45)
 	tw.tween_callback(func () -> void:
