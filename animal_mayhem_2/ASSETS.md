@@ -73,7 +73,15 @@ Playable animals remain **constructed in `AnimalVisuals.build()`** (Godot meshes
 - Creator: project
 - License: project-owned
 - Commercial / modify / APK: Yes
-- Notes: Scale map is a generated diamond lattice. Slither is procedural, not a skeletal clip.
+- Notes: Scale map is a generated diamond lattice. Body is a deformed tube mesh (`SnakeTube`), not a visible capsule chain. Slither is procedural.
+
+## PR #19 audio
+
+| File | Origin | License |
+| --- | --- | --- |
+| `sfx_campfire.wav` | Generated for this project (procedural crackle) | project-owned |
+
+`music_exploration.wav` remains original and was not replaced. Music volume is lowered so ambience stays audible.
 
 Substitution path (unchanged): instance a licensed GLTF from `AnimalVisuals.build()` without changing movement, abilities, or mission scripts.
 

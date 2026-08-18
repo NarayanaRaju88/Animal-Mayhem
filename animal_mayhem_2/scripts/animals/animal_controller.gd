@@ -145,6 +145,10 @@ func _animate(delta: float, moving: float, speed: float) -> void:
 		return
 	var breath := sin(_phase) * (0.01 if not run else 0.003)
 	_visual.position.y = breath
+	if run:
+		_visual.rotation_degrees.z = sin(_phase * 2.0) * 2.4
+	else:
+		_visual.rotation_degrees.z = lerpf(_visual.rotation_degrees.z, 0.0, 0.12)
 	var head := _visual.get_node_or_null("Head")
 	if head:
 		if action_name == "push":
@@ -215,3 +219,10 @@ func _animate_snake(run: bool) -> void:
 		var tongue := hd.get_node_or_null("Tongue")
 		if tongue:
 			tongue.scale.z = 1.0 + abs(sin(_phase * 6.0)) * 0.9
+	var body := _visual.get_node_or_null("BodyMesh")
+	if body and segs:
+		var pts := PackedVector3Array()
+		pts.append(hd.position if hd else Vector3(0, 0.16, 0.28))
+		for c in segs.get_children():
+			pts.append((c as Node3D).position)
+		SnakeTube.rebuild(body as MeshInstance3D, pts, body.material_override)

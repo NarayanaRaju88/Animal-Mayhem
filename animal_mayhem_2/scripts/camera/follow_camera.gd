@@ -1,12 +1,12 @@
 class_name FollowCamera
 extends Node3D
-## Third-person orbit camera. Distance/height adapt per animal; ray avoids terrain.
+## Third-person adventure camera. Animal stays readable; jungle fills most of the frame.
 
 var target: Node3D
-var distance := 5.6
-var height := 2.1
+var distance := 9.4
+var height := 3.05
 var yaw := 2.55
-var pitch := -0.28
+var pitch := -0.22
 var _look_drag := Vector2.ZERO
 var _cam: Camera3D
 
@@ -14,9 +14,9 @@ var _cam: Camera3D
 func _ready() -> void:
 	_cam = Camera3D.new()
 	_cam.name = "Camera3D"
-	_cam.fov = 48.0
-	_cam.near = 0.12
-	_cam.far = 180.0
+	_cam.fov = 55.0
+	_cam.near = 0.15
+	_cam.far = 240.0
 	add_child(_cam)
 
 
@@ -27,14 +27,14 @@ func add_look(delta: Vector2) -> void:
 func _process(delta: float) -> void:
 	if target == null:
 		return
-	yaw -= _look_drag.x * 0.0045
-	pitch = clampf(pitch - _look_drag.y * 0.0035, -0.72, 0.12)
+	yaw -= _look_drag.x * 0.0042
+	pitch = clampf(pitch - _look_drag.y * 0.0032, -0.58, 0.08)
 	_look_drag = Vector2.ZERO
-	var look_height := height * 0.52
+	var look_height := height * 0.38
 	var pivot := target.global_position + Vector3(0.0, look_height, 0.0)
 	var offset := Vector3(
 		sin(yaw) * cos(pitch) * distance,
-		height + sin(-pitch) * distance * 0.28,
+		height + sin(-pitch) * distance * 0.22,
 		cos(yaw) * cos(pitch) * distance
 	)
 	var desired := pivot + offset
@@ -45,10 +45,12 @@ func _process(delta: float) -> void:
 		q.exclude = _exclude_target()
 		var hit := space.intersect_ray(q)
 		if not hit.is_empty():
-			desired = hit.position + (hit.normal as Vector3) * 0.45
-	global_position = global_position.lerp(desired, 1.0 - exp(-delta * 6.2))
+			var pulled: Vector3 = hit.position + (hit.normal as Vector3) * 0.55
+			if pulled.distance_to(pivot) > 2.4:
+				desired = pulled
+	global_position = global_position.lerp(desired, 1.0 - exp(-delta * 4.6))
 	var look_at_pos := target.global_position + Vector3(0.0, look_height, 0.0)
-	if global_position.distance_to(look_at_pos) > 0.08:
+	if global_position.distance_to(look_at_pos) > 0.12:
 		look_at(look_at_pos)
 
 

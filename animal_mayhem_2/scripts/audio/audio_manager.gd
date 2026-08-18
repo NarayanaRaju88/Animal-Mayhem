@@ -12,12 +12,15 @@ var _water_db := -80.0
 var _ambience_db := -10.0
 var _water_target := -80.0
 var _ambience_target := -10.0
+var _fire: AudioStreamPlayer
+var _fire_db := -80.0
+var _fire_target := -80.0
 
 
 func _ready() -> void:
 	_music = AudioStreamPlayer.new()
 	_music.bus = "Master"
-	_music.volume_db = -9.0
+	_music.volume_db = -13.0
 	add_child(_music)
 	_ambience = AudioStreamPlayer.new()
 	_ambience.volume_db = -10.0
@@ -35,6 +38,10 @@ func _ready() -> void:
 	_loop(_ambience, "jungle_ambience")
 	_loop(_music, "music_exploration")
 	_loop(_water, "water_loop")
+	_fire = AudioStreamPlayer.new()
+	_fire.volume_db = -80.0
+	add_child(_fire)
+	_loop(_fire, "sfx_campfire")
 
 
 func _process(delta: float) -> void:
@@ -42,11 +49,15 @@ func _process(delta: float) -> void:
 	_ambience_db = lerpf(_ambience_db, _ambience_target, 1.0 - exp(-delta * 1.2))
 	_water.volume_db = _water_db
 	_ambience.volume_db = _ambience_db
+	_fire_db = lerpf(_fire_db, _fire_target, 1.0 - exp(-delta * 1.4))
+	if _fire:
+		_fire.volume_db = _fire_db
 
 
-func set_mix(water_amount: float, forest_amount: float) -> void:
+func set_mix(water_amount: float, forest_amount: float, camp_amount := 0.0) -> void:
 	_water_target = lerpf(-80.0, -11.0, clampf(water_amount, 0.0, 1.0))
 	_ambience_target = lerpf(-16.0, -7.5, clampf(forest_amount, 0.0, 1.0))
+	_fire_target = lerpf(-80.0, -20.0, clampf(camp_amount, 0.0, 1.0))
 
 
 func set_near_water(near: bool) -> void:
@@ -76,14 +87,14 @@ func _load_all() -> void:
 	var names := [
 		"jungle_ambience", "music_exploration", "water_loop",
 		"sfx_footstep", "sfx_push", "sfx_climb", "sfx_coil", "sfx_gate",
-		"sfx_switch", "sfx_complete", "sfx_buffalo", "sfx_monkey", "sfx_snake",
+		"sfx_switch", "sfx_complete", "sfx_buffalo", "sfx_monkey", "sfx_snake", "sfx_campfire",
 	]
 	for n in names:
 		var path := "res://assets/audio/%s.wav" % n
 		if ResourceLoader.exists(path):
 			var s: AudioStream = load(path)
 			if s is AudioStreamWAV:
-				(s as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD if n.begins_with("jungle") or n.begins_with("music") or n.begins_with("water") else AudioStreamWAV.LOOP_DISABLED
+				(s as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD if n.begins_with("jungle") or n.begins_with("music") or n.begins_with("water") or n.ends_with("campfire") else AudioStreamWAV.LOOP_DISABLED
 			_streams[n] = s
 
 

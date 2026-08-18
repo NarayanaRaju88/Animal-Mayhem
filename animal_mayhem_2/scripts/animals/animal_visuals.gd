@@ -37,7 +37,7 @@ static func _pivot(parent: Node3D, node_name: String, pos: Vector3) -> Node3D:
 
 
 static func _buffalo(p: Node3D) -> void:
-	p.scale = Vector3(1.22, 1.22, 1.22)
+	p.scale = Vector3(1.06, 1.06, 1.06)
 	var hide := MaterialLibrary.animal("buffalo_hide.png", Color(1, 1, 1), 0.86)
 	var dark := MaterialLibrary.animal("buffalo_hide.png", Color(0.55, 0.48, 0.4), 0.9)
 	var horn := StandardMaterial3D.new()
@@ -136,7 +136,7 @@ static func _buffalo(p: Node3D) -> void:
 
 
 static func _monkey(p: Node3D) -> void:
-	p.scale = Vector3(1.48, 1.48, 1.48)
+	p.scale = Vector3(1.18, 1.18, 1.18)
 	var fur := MaterialLibrary.animal("monkey_fur.png", Color(1, 1, 1), 0.88)
 	var skin := StandardMaterial3D.new()
 	skin.albedo_color = Color(0.76, 0.56, 0.42)
@@ -214,18 +214,22 @@ static func _monkey(p: Node3D) -> void:
 
 
 static func _snake(p: Node3D) -> void:
-	p.scale = Vector3(1.42, 1.42, 1.42)
-	var scales := MaterialLibrary.animal("snake_scales.png", Color(0.95, 1.0, 0.88), 0.52)
-	var belly := MaterialLibrary.animal("snake_scales.png", Color(0.82, 0.74, 0.48), 0.6)
+	p.scale = Vector3(1.12, 1.12, 1.12)
+	var scales := MaterialLibrary.animal("snake_scales.png", Color(0.92, 0.98, 0.82), 0.58)
+	var belly := MaterialLibrary.animal("snake_scales.png", Color(0.78, 0.7, 0.46), 0.64)
 	var segs := Node3D.new()
 	segs.name = "Segments"
 	p.add_child(segs)
-	for i in range(18):
-		var cap := CapsuleMesh.new()
-		cap.radius = 0.145 - i * 0.0045
-		cap.height = 0.34 - i * 0.006
-		var mat := scales if i % 2 == 0 else belly
-		_mesh(segs, cap, mat, Vector3(0, 0.14, -i * 0.2), Vector3(90, 0, 0), Vector3(1.0, 1.0, 1.05), "S%d" % i)
+	for i in range(16):
+		var n := Node3D.new()
+		n.name = "S%d" % i
+		n.position = Vector3(0, 0.12, -i * 0.2)
+		segs.add_child(n)
+	var body := MeshInstance3D.new()
+	body.name = "BodyMesh"
+	body.material_override = scales
+	p.add_child(body)
+	p.set_meta("belly_mat", belly)
 	var head := _pivot(p, "Head", Vector3(0, 0.16, 0.28))
 	var hd := SphereMesh.new()
 	hd.radius = 0.175
@@ -238,8 +242,8 @@ static func _snake(p: Node3D) -> void:
 	ridge.height = 0.22
 	_mesh(head, ridge, scales, Vector3(0, 0.06, 0.02), Vector3(90, 0, 0))
 	var gold := StandardMaterial3D.new()
-	gold.albedo_color = Color(0.72, 0.62, 0.16)
-	gold.roughness = 0.3
+	gold.albedo_color = Color(0.62, 0.52, 0.14)
+	gold.roughness = 0.34
 	_mesh(head, SphereMesh.new(), gold, Vector3(-0.09, 0.05, 0.14), Vector3.ZERO, Vector3(0.4, 0.35, 0.32))
 	_mesh(head, SphereMesh.new(), gold, Vector3(0.09, 0.05, 0.14), Vector3.ZERO, Vector3(0.4, 0.35, 0.32))
 	var pupil := StandardMaterial3D.new()

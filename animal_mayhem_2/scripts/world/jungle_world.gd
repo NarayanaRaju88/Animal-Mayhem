@@ -63,10 +63,11 @@ func _process(delta: float) -> void:
 	var forest_amt := clampf((from_camp - 6.0) / 22.0, 0.4, 1.0)
 	if water_amt > 0.35:
 		forest_amt *= 0.72
-	AudioManager.set_mix(water_amt, forest_amt)
+	var camp_amt := clampf(1.0 - from_camp / 9.0, 0.0, 1.0)
+	AudioManager.set_mix(water_amt, forest_amt, camp_amt)
 	if camera.target:
-		camera.distance = lerp(camera.distance, active.definition.camera_distance, 1.0 - exp(-delta * 3.0))
-		camera.height = lerp(camera.height, active.definition.camera_height, 1.0 - exp(-delta * 3.0))
+		camera.distance = lerp(camera.distance, active.definition.camera_distance, 1.0 - exp(-delta * 2.4))
+		camera.height = lerp(camera.height, active.definition.camera_height, 1.0 - exp(-delta * 2.4))
 
 
 func _read_keyboard() -> void:
