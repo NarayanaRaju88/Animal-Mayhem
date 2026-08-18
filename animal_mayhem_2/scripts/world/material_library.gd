@@ -24,9 +24,15 @@ static func animal(tex_name: String, tint: Color, rough := 0.78) -> StandardMate
 	m.albedo_color = tint
 	m.roughness = rough
 	m.metallic = 0.0
+	var nrm_name := tex_name.get_basename() + "_n.png"
+	var nrm_path := "res://assets/animals/textures/%s" % nrm_name
+	if ResourceLoader.exists(nrm_path):
+		m.normal_enabled = true
+		m.normal_texture = load(nrm_path)
+		m.normal_scale = 0.55
 	m.rim_enabled = true
-	m.rim = 0.12
-	m.rim_tint = 0.28
+	m.rim = 0.08
+	m.rim_tint = 0.22
 	m.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
 	return m
 

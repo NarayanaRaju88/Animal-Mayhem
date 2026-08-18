@@ -76,7 +76,7 @@ func _sun() -> void:
 	add_child(sun)
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-20, -140, 0)
-	fill.light_energy = 0.18
+	fill.light_energy = 0.22
 	fill.light_color = Color(0.55, 0.65, 0.7)
 	fill.shadow_enabled = false
 	add_child(fill)
@@ -302,6 +302,17 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 		smi.scale = Vector3(rng.randf_range(0.85, 1.25), rng.randf_range(0.65, 1.05), rng.randf_range(0.85, 1.25))
 		smi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		root.add_child(smi)
+	for r in range(3):
+		var root_m := MeshInstance3D.new()
+		var rc := CylinderMesh.new()
+		rc.top_radius = 0.04
+		rc.bottom_radius = trunk.bottom_radius * 0.55
+		rc.height = rng.randf_range(0.55, 1.05)
+		root_m.mesh = rc
+		root_m.material_override = bark
+		root_m.position = Vector3(0, 0.08, 0)
+		root_m.rotation_degrees = Vector3(78.0, r * 120.0 + rng.randf() * 24.0, rng.randf_range(-10, 10))
+		root.add_child(root_m)
 	if rng.randf() > 0.62:
 		for v in range(2 + rng.randi() % 2):
 			var vine := MeshInstance3D.new()
@@ -391,7 +402,7 @@ func _grass_field() -> void:
 func _leaf_litter() -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.instance_count = 90
+	mm.instance_count = 120
 	var disc := CylinderMesh.new()
 	disc.top_radius = 0.22
 	disc.bottom_radius = 0.22
@@ -441,7 +452,7 @@ func _bushes() -> void:
 func _fallen_branches() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 77
-	for i in 9:
+	for i in 12:
 		var x := rng.randf_range(-18, 20)
 		var z := rng.randf_range(-18, 12)
 		var logm := MeshInstance3D.new()

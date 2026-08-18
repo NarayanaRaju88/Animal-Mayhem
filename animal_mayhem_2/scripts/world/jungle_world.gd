@@ -160,7 +160,9 @@ func _make_hud() -> void:
 
 
 func _capture_screenshot() -> void:
-	await get_tree().create_timer(1.2).timeout
+	var shot := OS.get_environment("AM2_SHOT").strip_edges()
+	_apply_validation_shot(shot)
+	await get_tree().create_timer(1.4).timeout
 	var img := get_viewport().get_texture().get_image()
 	if img == null:
 		print("ANIMAL_MAYHEM_2_SCREENSHOT_FAIL")
@@ -168,3 +170,50 @@ func _capture_screenshot() -> void:
 	var path := OS.get_environment("AM2_SCREENSHOT")
 	img.save_png(path)
 	print("ANIMAL_MAYHEM_2_SCREENSHOT ", path)
+
+
+func _apply_validation_shot(shot: String) -> void:
+	if animals.is_empty():
+		return
+	var animal_i := 0
+	var xz := Vector2(0.0, 0.0)
+	match shot:
+		"A", "J", "G":
+			animal_i = 0
+			xz = Vector2(0.4, 1.2)
+		"B":
+			animal_i = 1
+			xz = Vector2(1.2, 0.4)
+		"C":
+			animal_i = 2
+			xz = Vector2(0.2, -1.2)
+		"D":
+			animal_i = 0
+			xz = Vector2(12.5, 0.0)
+		"E":
+			animal_i = 1
+			xz = Vector2(24.5, 12.0)
+		"F":
+			animal_i = 2
+			xz = Vector2(33.8, -8.5)
+		"H":
+			animal_i = 0
+			xz = Vector2(26.0, -9.0)
+		"I":
+			animal_i = 0
+			xz = Vector2(8.0, 0.4)
+		_:
+			return
+	_switch(animal_i, true)
+	var a := animals[animal_i]
+	var y := builder.height_at(xz.x, xz.y) + 0.25
+	a.global_position = Vector3(xz.x, y, xz.y)
+	a.rotation.y = 1.2
+	camera.yaw = 2.55
+	camera.pitch = -0.22
+	camera.global_position = a.global_position + Vector3(
+		sin(camera.yaw) * camera.distance,
+		camera.height,
+		cos(camera.yaw) * camera.distance
+	)
+	camera.target = a

@@ -28,52 +28,61 @@ Modify: Yes. Commercial use: Yes. Redistribution in APK: Yes. Attribution: not r
 
 1K JPG/HDR variants. Maps: albedo (`diff`), OpenGL normal (`nor_gl`), roughness (`rough`).
 
-## Animal 3D assets — audit (PR #18)
+## Animal 3D assets — audit (PR #20)
 
-Searched for verified realistic/semi-realistic buffalo, monkey, and snake GLTF/GLB suitable for commercial APK redistribution.
+Suitable licensed realistic animal asset was not available.
+
+Re-checked for verified GLTF/GLB buffalo, macaque/monkey, and snake meshes with clear commercial + modification + APK redistribution rights.
 
 | Candidate | Why not used |
 | --- | --- |
-| Poly Haven wildlife/mammals models | **0 results** for buffalo, monkey, or snake (https://polyhaven.com/models/nature/wildlife/mammals) |
-| OpenGameArt “Monkey 3D model” (tomk) | Tagged **cartoon**; from another game (“Kill Monkey”) — excluded |
-| Quaternius / Poly Pizza snake | **Low-poly cartoon**, not realistic |
-| Sketchfab bison/monkey collections | License not uniformly CC0 / not fully verifiable without account scraping |
-| Smithsonian 3D | CC0 bone/skull fragments, not complete textured animals |
+| Poly Haven wildlife/mammals models | **0 results** for buffalo, monkey, or snake |
+| OpenGameArt “Monkey 3D model” (tomk) | Cartoon / other-game origin — excluded |
+| Quaternius / Poly Pizza animals | Low-poly cartoon, not suitable |
+| Sketchfab collections | License not uniformly CC0 / not fully verifiable |
+| Smithsonian 3D | Bone/skull fragments, not complete animals |
+| PUBG / Fortnite / film / ripped packs | Forbidden |
 
 **No external animal mesh was added.** Licensing was not compromised for screenshots.
 
-Playable animals remain **constructed in `AnimalVisuals.build()`** (Godot meshes) plus **project-generated** albedo maps:
+Playable animals remain **constructed in `AnimalVisuals.build()`** using lofted/organic meshes (`OrganicMesh`, `SnakeTube`) plus **project-generated** albedo and normal maps.
 
-### Buffalo (constructed)
+These are **semi-realistic / realistic-inspired** constructed animals, not photogrammetry and not photoreal.
 
-- Asset: project-owned assembled mesh + `buffalo_hide.png`
+### Buffalo (constructed, lofted)
+
+- Asset: project-owned lofted mesh + `buffalo_hide.png` + `buffalo_hide_n.png`
 - Species: water-buffalo / Cape-buffalo silhouette (not a scanned species)
 - Source: Animal Mayhem 2.0
 - Creator: project
 - License: project-owned
 - Commercial / modify / APK: Yes
 - Attribution required: No
-- Notes: Hide map is generated noise/streaks, not a photo scan. Not photoreal GLTF.
+- Notes: Hide and normal maps are generated (noise/streaks), not a photo scan. Not a photoreal GLTF.
 
-### Monkey (constructed)
+### Monkey (constructed, lofted)
 
-- Asset: project-owned assembled mesh + `monkey_fur.png`
+- Asset: project-owned lofted mesh + `monkey_fur.png` + `monkey_fur_n.png`
 - Species: macaque-like silhouette
 - Source: Animal Mayhem 2.0
 - Creator: project
 - License: project-owned
 - Commercial / modify / APK: Yes
-- Notes: Fur map is generated; no hair cards / groom.
+- Notes: Fur maps are generated; no hair cards / groom.
 
-### Snake (constructed)
+### Snake (constructed, elliptical tube)
 
-- Asset: project-owned overlapping capsule body + `snake_scales.png`
+- Asset: project-owned deforming elliptical tube + lofted head + `snake_scales.png` + `snake_scales_n.png`
 - Species: generic colubrid silhouette
 - Source: Animal Mayhem 2.0
 - Creator: project
 - License: project-owned
 - Commercial / modify / APK: Yes
-- Notes: Scale map is a generated diamond lattice. Body is a deformed tube mesh (`SnakeTube`), not a visible capsule chain. Slither is procedural.
+- Notes: Scale maps are generated. Body is not a visible capsule chain. Coil remains driven by the existing COIL ability.
+
+## Historical note (PR #18 / #19)
+
+Earlier visual PRs reached the same licensing conclusion: no verified commercial-redistributable photogrammetry animals. PR #20 keeps that policy and upgrades constructed geometry, materials, and animation instead of importing unknown-license GLTF.
 
 ## PR #19 audio
 

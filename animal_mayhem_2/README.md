@@ -78,7 +78,7 @@ See `ASSETS.md`.
 
 ## Known limitations
 
-- Animal bodies are constructed meshes, not scanned/realistic GLTF. Faces and fur are simplified.
+- Animal bodies are lofted constructed meshes (semi-realistic / realistic-inspired), not scanned GLTF. Faces and fur are simplified.
 - Vegetation uses instanced / procedural meshes with CC0 tiling textures, not photogrammetry trees.
 - Inactive animals wait in place (no follow-AI — out of visual-pass scope).
 - One jungle, one mission, three animals — by design.
