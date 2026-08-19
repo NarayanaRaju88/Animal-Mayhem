@@ -42,23 +42,23 @@ func _environment() -> void:
 	var sky := Sky.new()
 	var pano := PanoramaSkyMaterial.new()
 	pano.panorama = load("res://assets/environment/hdris/rainforest_trail_1k.hdr")
-	pano.energy_multiplier = 0.85
+	pano.energy_multiplier = 0.62
 	sky.sky_material = pano
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_energy = 0.58
+	e.ambient_light_energy = 0.46
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	e.tonemap_exposure = 0.9
+	e.tonemap_exposure = 0.82
 	e.adjustment_enabled = true
-	e.adjustment_saturation = 0.94
+	e.adjustment_saturation = 0.9
 	e.fog_enabled = true
-	e.fog_light_color = Color(0.62, 0.66, 0.52)
-	e.fog_density = 0.0105
-	e.fog_aerial_perspective = 0.62
-	e.fog_sky_affect = 0.4
+	e.fog_light_color = Color(0.55, 0.6, 0.48)
+	e.fog_density = 0.007
+	e.fog_aerial_perspective = 0.48
+	e.fog_sky_affect = 0.28
 	e.glow_enabled = true
-	e.glow_intensity = 0.08
-	e.glow_bloom = 0.015
+	e.glow_intensity = 0.035
+	e.glow_bloom = 0.006
 	env.environment = e
 	add_child(env)
 
@@ -66,7 +66,7 @@ func _environment() -> void:
 func _sun() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-42, 38, 0)
-	sun.light_energy = 1.05
+	sun.light_energy = 0.92
 	sun.light_color = Color(1.0, 0.93, 0.78)
 	sun.light_angular_distance = 0.85
 	sun.shadow_enabled = true
@@ -76,7 +76,7 @@ func _sun() -> void:
 	add_child(sun)
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-20, -140, 0)
-	fill.light_energy = 0.22
+	fill.light_energy = 0.2
 	fill.light_color = Color(0.55, 0.65, 0.7)
 	fill.shadow_enabled = false
 	add_child(fill)
@@ -287,19 +287,25 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 			br.rotation_degrees = Vector3(rng.randf_range(28, 58), rng.randf() * 360.0, rng.randf_range(-18, 18))
 			br.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 			root.add_child(br)
-	var clumps := 2 + rng.randi() % 3
+	var clumps := 3 + rng.randi() % 3
 	for k in range(clumps):
 		var sph := SphereMesh.new()
-		sph.radius = rng.randf_range(1.05, 1.85)
+		sph.radius = rng.randf_range(0.85, 1.35)
 		var smi := MeshInstance3D.new()
 		smi.mesh = sph
 		smi.material_override = leaf
+		var side := -1.0 if k % 2 == 0 else 1.0
 		smi.position = Vector3(
-			rng.randf_range(-0.85, 0.85),
-			trunk.height + rng.randf_range(-0.35, 0.65),
-			rng.randf_range(-0.85, 0.85)
+			rng.randf_range(0.15, 0.95) * side,
+			trunk.height + rng.randf_range(-0.55, 0.85),
+			rng.randf_range(-0.9, 0.7)
 		)
-		smi.scale = Vector3(rng.randf_range(0.85, 1.25), rng.randf_range(0.65, 1.05), rng.randf_range(0.85, 1.25))
+		smi.scale = Vector3(
+			rng.randf_range(0.95, 1.55),
+			rng.randf_range(0.28, 0.48),
+			rng.randf_range(0.85, 1.4)
+		)
+		smi.rotation_degrees = Vector3(rng.randf_range(-18, 18), rng.randf() * 360.0, rng.randf_range(-14, 14))
 		smi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		root.add_child(smi)
 	for r in range(3):
@@ -331,16 +337,29 @@ func _rock(pos: Vector3, rng: RandomNumberGenerator, scale_mul: float = 1.0) -> 
 	var stem := "mossy_rock" if rng.randf() > 0.45 else "aerial_rocks_02"
 	var mat := MaterialLibrary.pbr(stem, rng.randf_range(0.7, 1.4))
 	mat.albedo_color = Color(0.88, 0.9, 0.82)
-	var box := SphereMesh.new()
-	box.radius = rng.randf_range(0.4, 1.15) * scale_mul
-	var mi := MeshInstance3D.new()
-	mi.mesh = box
-	mi.material_override = mat
-	mi.position = pos + Vector3(0, box.radius * 0.35, 0)
-	mi.rotation_degrees = Vector3(rng.randf_range(-24, 24), rng.randf() * 360.0, rng.randf_range(-24, 24))
-	mi.scale = Vector3(rng.randf_range(0.85, 1.3), rng.randf_range(0.42, 0.82), rng.randf_range(0.9, 1.35))
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	add_child(mi)
+	var cluster := Node3D.new()
+	cluster.position = pos
+	add_child(cluster)
+	var chunks := 2 + rng.randi() % 2
+	for i in chunks:
+		var chunk := BoxMesh.new()
+		chunk.size = Vector3(
+			rng.randf_range(0.42, 1.15) * scale_mul,
+			rng.randf_range(0.22, 0.48) * scale_mul,
+			rng.randf_range(0.38, 1.05) * scale_mul
+		)
+		var mi := MeshInstance3D.new()
+		mi.mesh = chunk
+		mi.material_override = mat
+		mi.position = Vector3(
+			rng.randf_range(-0.28, 0.28) * scale_mul,
+			chunk.size.y * rng.randf_range(0.22, 0.42),
+			rng.randf_range(-0.28, 0.28) * scale_mul
+		)
+		mi.rotation_degrees = Vector3(rng.randf_range(-28, 28), rng.randf() * 360.0, rng.randf_range(-22, 22))
+		mi.scale = Vector3(rng.randf_range(0.85, 1.25), rng.randf_range(0.75, 1.15), rng.randf_range(0.85, 1.2))
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		cluster.add_child(mi)
 
 
 func _grass_tuft_mesh() -> ArrayMesh:
@@ -436,17 +455,23 @@ func _bushes() -> void:
 		var z := rng.randf_range(-32, 30)
 		if abs(z) < 3.0 and x > -6.0 and x < 48.0:
 			continue
-		var b := MeshInstance3D.new()
-		var sm := SphereMesh.new()
-		sm.radius = rng.randf_range(0.42, 0.95)
-		sm.height = rng.randf_range(0.65, 1.25)
-		b.mesh = sm
+		var cluster := Node3D.new()
+		cluster.position = Vector3(x, height_at(x, z), z)
+		add_child(cluster)
 		var mat := MaterialLibrary.pbr("leafy_grass", 1.2)
-		mat.albedo_color = Color(0.38, 0.48, 0.26)
-		b.material_override = mat
-		b.position = Vector3(x, height_at(x, z) + 0.28, z)
-		b.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-		add_child(b)
+		mat.albedo_color = Color(0.38, 0.48, 0.26).lightened(rng.randf() * 0.08)
+		var n := 2 + rng.randi() % 3
+		for k in n:
+			var b := MeshInstance3D.new()
+			var sm := SphereMesh.new()
+			sm.radius = rng.randf_range(0.32, 0.7)
+			b.mesh = sm
+			b.material_override = mat
+			b.position = Vector3(rng.randf_range(-0.28, 0.28), 0.18 + rng.randf() * 0.22, rng.randf_range(-0.28, 0.28))
+			b.scale = Vector3(rng.randf_range(0.8, 1.35), rng.randf_range(0.45, 0.85), rng.randf_range(0.75, 1.3))
+			b.rotation_degrees.y = rng.randf() * 360.0
+			b.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+			cluster.add_child(b)
 
 
 func _fallen_branches() -> void:
@@ -578,7 +603,7 @@ func _horizon() -> void:
 		var dist := rng.randf_range(48.0, 70.0)
 		var xf := Transform3D.IDENTITY
 		xf.origin = Vector3(cos(ang) * dist, rng.randf_range(4.0, 10.0), sin(ang) * dist)
-		xf.basis = xf.basis.scaled(Vector3.ONE * rng.randf_range(0.8, 1.8))
+		xf.basis = xf.basis.scaled(Vector3(rng.randf_range(1.1, 2.2), rng.randf_range(0.32, 0.55), rng.randf_range(1.1, 2.2)))
 		mm.set_instance_transform(i, xf)
 
 
@@ -593,6 +618,17 @@ func _camp() -> void:
 	pad.material_override = MaterialLibrary.pbr("brown_mud_03", 2.4)
 	pad.position = Vector3(0, hy + 0.03, 0)
 	add_child(pad)
+	var pit := MeshInstance3D.new()
+	var pitm := CylinderMesh.new()
+	pitm.top_radius = 0.55
+	pitm.bottom_radius = 0.62
+	pitm.height = 0.08
+	pit.mesh = pitm
+	var pitmat := MaterialLibrary.pbr("brown_mud_03", 3.0)
+	pitmat.albedo_color = Color(0.22, 0.14, 0.1)
+	pit.material_override = pitmat
+	pit.position = Vector3(0, hy + 0.05, 0)
+	add_child(pit)
 	var stone := MaterialLibrary.pbr("aerial_rocks_02", 1.6)
 	for i in range(10):
 		var ang := i * TAU / 10.0
@@ -601,31 +637,48 @@ func _camp() -> void:
 		var mi := MeshInstance3D.new()
 		mi.mesh = sph
 		mi.material_override = stone
-		mi.position = Vector3(cos(ang) * 0.72, hy + 0.12, sin(ang) * 0.72)
-		mi.scale = Vector3(1.1, 0.55, 1.0)
+		mi.position = Vector3(cos(ang) * 0.72, hy + 0.1, sin(ang) * 0.72)
+		mi.scale = Vector3(1.15, 0.42, 1.05)
+		mi.rotation_degrees.y = float(i) * 37.0
 		add_child(mi)
-	for i in 3:
+	for i in 5:
 		var logm := MeshInstance3D.new()
 		var cyl := CylinderMesh.new()
-		cyl.top_radius = 0.04
+		cyl.top_radius = 0.035
 		cyl.bottom_radius = 0.05
-		cyl.height = 0.7
+		cyl.height = 0.62
 		logm.mesh = cyl
 		logm.material_override = MaterialLibrary.pbr("bark_brown_01", 2.2)
-		logm.position = Vector3(0, hy + 0.28, 0)
-		logm.rotation_degrees = Vector3(55, i * 120.0, 0)
+		logm.position = Vector3(0, hy + 0.22, 0)
+		logm.rotation_degrees = Vector3(58, i * 72.0, 8)
 		add_child(logm)
 	var fire := OmniLight3D.new()
-	fire.light_color = Color(1.0, 0.52, 0.2)
-	fire.light_energy = 1.05
-	fire.omni_range = 5.2
+	fire.light_color = Color(1.0, 0.5, 0.18)
+	fire.light_energy = 0.85
+	fire.omni_range = 4.6
 	fire.shadow_enabled = false
-	fire.position = Vector3(0, hy + 0.75, 0)
+	fire.position = Vector3(0, hy + 0.62, 0)
 	add_child(fire)
+	var flame := MeshInstance3D.new()
+	var flm := SphereMesh.new()
+	flm.radius = 0.12
+	flame.mesh = flm
+	var flmat := StandardMaterial3D.new()
+	flmat.albedo_color = Color(1.0, 0.45, 0.12, 0.55)
+	flmat.emission_enabled = true
+	flmat.emission = Color(1.0, 0.35, 0.08)
+	flmat.emission_energy_multiplier = 1.6
+	flmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	flmat.roughness = 1.0
+	flame.material_override = flmat
+	flame.position = Vector3(0, hy + 0.32, 0)
+	flame.scale = Vector3(0.7, 1.4, 0.7)
+	flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(flame)
 	var embers := GPUParticles3D.new()
-	embers.amount = 12
-	embers.lifetime = 1.4
-	embers.position = Vector3(0, hy + 0.35, 0)
+	embers.amount = 16
+	embers.lifetime = 1.35
+	embers.position = Vector3(0, hy + 0.28, 0)
 	var epm := ParticleProcessMaterial.new()
 	epm.direction = Vector3(0, 1, 0)
 	epm.spread = 18.0
@@ -642,25 +695,73 @@ func _camp() -> void:
 	embers.draw_pass_1 = es
 	add_child(embers)
 	var canvas := StandardMaterial3D.new()
-	canvas.albedo_color = Color(0.58, 0.46, 0.3)
-	canvas.roughness = 0.93
+	canvas.albedo_color = Color(0.52, 0.42, 0.28)
+	canvas.roughness = 0.94
 	canvas.metallic = 0.0
-	var tent := PrismMesh.new()
-	tent.size = Vector3(2.6, 1.7, 2.3)
-	var tmi := MeshInstance3D.new()
-	tmi.mesh = tent
-	tmi.material_override = canvas
-	tmi.position = Vector3(-3.3, hy + 0.9, -2.5)
-	tmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	add_child(tmi)
+	var poles := MaterialLibrary.pbr("bark_brown_01", 2.0)
+	var tent_root := Node3D.new()
+	tent_root.position = Vector3(-3.3, hy, -2.5)
+	add_child(tent_root)
+	var ridge := MeshInstance3D.new()
+	var ridgem := CylinderMesh.new()
+	ridgem.top_radius = 0.03
+	ridgem.bottom_radius = 0.03
+	ridgem.height = 2.4
+	ridge.mesh = ridgem
+	ridge.material_override = poles
+	ridge.position = Vector3(0, 1.55, 0)
+	ridge.rotation_degrees = Vector3(0, 0, 90)
+	tent_root.add_child(ridge)
+	for side in [-1.0, 1.0]:
+		var wall := MeshInstance3D.new()
+		var wm := BoxMesh.new()
+		wm.size = Vector3(2.4, 0.04, 1.85)
+		wall.mesh = wm
+		wall.material_override = canvas
+		wall.position = Vector3(0, 0.78, 0.62 * side)
+		wall.rotation_degrees = Vector3(38.0 * side, 0, 0)
+		wall.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		tent_root.add_child(wall)
+		var pole := MeshInstance3D.new()
+		var pm := CylinderMesh.new()
+		pm.top_radius = 0.025
+		pm.bottom_radius = 0.03
+		pm.height = 1.7
+		pole.mesh = pm
+		pole.material_override = poles
+		pole.position = Vector3(1.05 * side, 0.82, 0.05)
+		tent_root.add_child(pole)
 	var flap := MeshInstance3D.new()
 	var flapm := BoxMesh.new()
-	flapm.size = Vector3(0.04, 1.1, 0.9)
+	flapm.size = Vector3(0.04, 1.05, 0.85)
 	flap.mesh = flapm
 	flap.material_override = canvas
-	flap.position = Vector3(-2.15, hy + 0.7, -2.5)
-	flap.rotation_degrees = Vector3(0, -18, 0)
-	add_child(flap)
+	flap.position = Vector3(1.15, 0.62, 0.12)
+	flap.rotation_degrees = Vector3(0, -22, 6)
+	tent_root.add_child(flap)
+	for i in 4:
+		var peg := MeshInstance3D.new()
+		var pegm := CylinderMesh.new()
+		pegm.top_radius = 0.012
+		pegm.bottom_radius = 0.016
+		pegm.height = 0.18
+		peg.mesh = pegm
+		peg.material_override = poles
+		var sx := -1.0 if i < 2 else 1.0
+		var sz := -1.0 if i % 2 == 0 else 1.0
+		peg.position = Vector3(1.15 * sx, 0.08, 0.85 * sz)
+		peg.rotation_degrees = Vector3(18 * sz, 0, 12 * sx)
+		tent_root.add_child(peg)
+		var rope := MeshInstance3D.new()
+		var rm := CylinderMesh.new()
+		rm.top_radius = 0.008
+		rm.bottom_radius = 0.008
+		rm.height = 1.15
+		rope.mesh = rm
+		rope.material_override = poles
+		rope.position = Vector3(0.7 * sx, 0.7, 0.45 * sz)
+		rope.rotation_degrees = Vector3(32 * sz, 0, -28 * sx)
+		tent_root.add_child(rope)
 	var crate := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = Vector3(0.7, 0.5, 0.7)
@@ -791,6 +892,8 @@ func _vine_gate() -> Node3D:
 		tuft.mesh = sph
 		tuft.material_override = leaf
 		tuft.position = Vector3(rng.randf_range(-0.3, 0.3), rng.randf_range(1.2, 3.8), rng.randf_range(-3.0, 3.0))
+		tuft.scale = Vector3(1.4, 0.4, 1.2)
+		tuft.rotation_degrees = Vector3(rng.randf_range(-16, 16), rng.randf() * 360.0, 0)
 		g.add_child(tuft)
 	var body := StaticBody3D.new()
 	body.collision_layer = 1

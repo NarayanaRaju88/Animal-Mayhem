@@ -1,12 +1,12 @@
 class_name SnakeTube
 extends RefCounted
-## Tapered elliptical snake body with scale UVs. Not a capsule chain.
+## Tapered elliptical snake with a flattened belly and dorsal ridge. Not a capsule chain.
 
 
 static func rebuild(mi: MeshInstance3D, points: PackedVector3Array, mat: Material) -> void:
 	if mi == null or points.size() < 4:
 		return
-	var radial := 10
+	var radial := 12
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var n := points.size()
@@ -28,16 +28,18 @@ static func rebuild(mi: MeshInstance3D, points: PackedVector3Array, mat: Materia
 		binorm = binorm.normalized()
 		var norm := binorm.cross(tangent).normalized()
 		var t := float(i) / float(maxi(n - 1, 1))
-		var rx := lerpf(0.16, 0.045, t)
-		var ry := lerpf(0.11, 0.03, t)
+		var neck := 1.0 if t > 0.08 else lerpf(1.18, 1.0, t / 0.08)
+		var rx := lerpf(0.15, 0.028, pow(t, 0.85)) * neck
+		var ry := lerpf(0.095, 0.018, pow(t, 0.9)) * neck
 		var ring := PackedVector3Array()
 		var uvring := PackedVector2Array()
 		for r in radial:
 			var a := TAU * float(r) / float(radial)
-			# Flatten the belly so it reads as a snake, not a pipe.
-			var yk := 0.72 if sin(a) < 0.0 else 1.0
+			var yk := 0.52 if sin(a) < 0.0 else 1.08
+			if sin(a) > 0.55:
+				yk = 1.22
 			ring.append(p + binorm * cos(a) * rx + norm * sin(a) * ry * yk)
-			uvring.append(Vector2(float(r) / float(radial) * 3.0, t * 8.0))
+			uvring.append(Vector2(float(r) / float(radial) * 4.0, t * 12.0))
 		rings.append(ring)
 		uvs.append(uvring)
 	for i in n - 1:

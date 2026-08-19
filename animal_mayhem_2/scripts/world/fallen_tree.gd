@@ -28,14 +28,17 @@ func _ready() -> void:
 	mi.position = Vector3(0, 0.48, 0)
 	_visual.add_child(mi)
 	var leaves := SphereMesh.new()
-	leaves.radius = 1.1
+	leaves.radius = 0.85
 	var lm := MaterialLibrary.pbr("leafy_grass", 0.9)
 	lm.albedo_color = Color(0.42, 0.55, 0.28)
-	var canopy := MeshInstance3D.new()
-	canopy.mesh = leaves
-	canopy.material_override = lm
-	canopy.position = Vector3(3.6, 1.1, 0.4)
-	_visual.add_child(canopy)
+	for k in 3:
+		var canopy := MeshInstance3D.new()
+		canopy.mesh = leaves
+		canopy.material_override = lm
+		canopy.position = Vector3(3.2 + k * 0.35, 0.85, (k - 1) * 0.45)
+		canopy.scale = Vector3(1.3 + k * 0.15, 0.38, 1.1)
+		canopy.rotation_degrees = Vector3(12, 40 * k, -8)
+		_visual.add_child(canopy)
 	for i in 4:
 		var br := MeshInstance3D.new()
 		var bc := CylinderMesh.new()

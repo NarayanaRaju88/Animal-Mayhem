@@ -38,6 +38,16 @@ func _ready() -> void:
 	rmi.position = Vector3(0, 1.15, 0)
 	rmi.rotation_degrees = Vector3(90, 0, 0)
 	add_child(rmi)
+	var wrap := MeshInstance3D.new()
+	var wrapm := CylinderMesh.new()
+	wrapm.top_radius = 0.04
+	wrapm.bottom_radius = 0.05
+	wrapm.height = 1.35
+	wrap.mesh = wrapm
+	wrap.material_override = MaterialLibrary.pbr("forest_leaves_03", 2.2)
+	wrap.position = Vector3(0.12, 0.7, 0.04)
+	wrap.rotation_degrees = Vector3(8, 0, 18)
+	add_child(wrap)
 
 
 func coil(animal: AnimalController) -> void:
