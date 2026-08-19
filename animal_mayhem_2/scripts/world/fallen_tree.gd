@@ -36,7 +36,7 @@ func _ready() -> void:
 		canopy.mesh = leaves
 		canopy.material_override = lm
 		canopy.position = Vector3(3.2 + k * 0.35, 0.85, (k - 1) * 0.45)
-		canopy.scale = Vector3(1.3 + k * 0.15, 0.38, 1.1)
+		canopy.scale = Vector3(1.15 + k * 0.12, 0.62, 0.95)
 		canopy.rotation_degrees = Vector3(12, 40 * k, -8)
 		_visual.add_child(canopy)
 	for i in 4:

@@ -46,14 +46,14 @@ func _environment() -> void:
 	sky.sky_material = pano
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_energy = 0.46
+	e.ambient_light_energy = 0.52
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	e.tonemap_exposure = 0.82
+	e.tonemap_exposure = 0.78
 	e.adjustment_enabled = true
 	e.adjustment_saturation = 0.9
 	e.fog_enabled = true
 	e.fog_light_color = Color(0.55, 0.6, 0.48)
-	e.fog_density = 0.007
+	e.fog_density = 0.005
 	e.fog_aerial_perspective = 0.48
 	e.fog_sky_affect = 0.28
 	e.glow_enabled = true
@@ -66,7 +66,7 @@ func _environment() -> void:
 func _sun() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-42, 38, 0)
-	sun.light_energy = 0.92
+	sun.light_energy = 0.78
 	sun.light_color = Color(1.0, 0.93, 0.78)
 	sun.light_angular_distance = 0.85
 	sun.shadow_enabled = true
@@ -289,23 +289,28 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 			root.add_child(br)
 	var clumps := 3 + rng.randi() % 3
 	for k in range(clumps):
-		var sph := SphereMesh.new()
-		sph.radius = rng.randf_range(0.85, 1.35)
+		var cap := CapsuleMesh.new()
+		cap.radius = rng.randf_range(0.48, 0.82)
+		cap.height = rng.randf_range(1.35, 2.25)
 		var smi := MeshInstance3D.new()
-		smi.mesh = sph
+		smi.mesh = cap
 		smi.material_override = leaf
 		var side := -1.0 if k % 2 == 0 else 1.0
 		smi.position = Vector3(
-			rng.randf_range(0.15, 0.95) * side,
-			trunk.height + rng.randf_range(-0.55, 0.85),
-			rng.randf_range(-0.9, 0.7)
+			rng.randf_range(0.1, 0.85) * side,
+			trunk.height + rng.randf_range(-0.35, 0.55),
+			rng.randf_range(-0.75, 0.65)
+		)
+		smi.rotation_degrees = Vector3(
+			rng.randf_range(62, 108),
+			rng.randf() * 360.0,
+			rng.randf_range(-28, 28)
 		)
 		smi.scale = Vector3(
-			rng.randf_range(0.95, 1.55),
-			rng.randf_range(0.28, 0.48),
-			rng.randf_range(0.85, 1.4)
+			rng.randf_range(0.85, 1.25),
+			rng.randf_range(0.9, 1.2),
+			rng.randf_range(0.8, 1.15)
 		)
-		smi.rotation_degrees = Vector3(rng.randf_range(-18, 18), rng.randf() * 360.0, rng.randf_range(-14, 14))
 		smi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		root.add_child(smi)
 	for r in range(3):
@@ -468,7 +473,7 @@ func _bushes() -> void:
 			b.mesh = sm
 			b.material_override = mat
 			b.position = Vector3(rng.randf_range(-0.28, 0.28), 0.18 + rng.randf() * 0.22, rng.randf_range(-0.28, 0.28))
-			b.scale = Vector3(rng.randf_range(0.8, 1.35), rng.randf_range(0.45, 0.85), rng.randf_range(0.75, 1.3))
+			b.scale = Vector3(rng.randf_range(0.85, 1.28), rng.randf_range(0.62, 0.95), rng.randf_range(0.8, 1.22))
 			b.rotation_degrees.y = rng.randf() * 360.0
 			b.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 			cluster.add_child(b)
@@ -603,7 +608,7 @@ func _horizon() -> void:
 		var dist := rng.randf_range(48.0, 70.0)
 		var xf := Transform3D.IDENTITY
 		xf.origin = Vector3(cos(ang) * dist, rng.randf_range(4.0, 10.0), sin(ang) * dist)
-		xf.basis = xf.basis.scaled(Vector3(rng.randf_range(1.1, 2.2), rng.randf_range(0.32, 0.55), rng.randf_range(1.1, 2.2)))
+		xf.basis = xf.basis.scaled(Vector3(rng.randf_range(1.05, 1.85), rng.randf_range(0.55, 0.88), rng.randf_range(1.05, 1.85)))
 		mm.set_instance_transform(i, xf)
 
 
@@ -632,14 +637,13 @@ func _camp() -> void:
 	var stone := MaterialLibrary.pbr("aerial_rocks_02", 1.6)
 	for i in range(10):
 		var ang := i * TAU / 10.0
-		var sph := SphereMesh.new()
-		sph.radius = 0.16 + (i % 3) * 0.03
+		var slab := BoxMesh.new()
+		slab.size = Vector3(0.28 + (i % 3) * 0.04, 0.12 + (i % 2) * 0.04, 0.2)
 		var mi := MeshInstance3D.new()
-		mi.mesh = sph
+		mi.mesh = slab
 		mi.material_override = stone
-		mi.position = Vector3(cos(ang) * 0.72, hy + 0.1, sin(ang) * 0.72)
-		mi.scale = Vector3(1.15, 0.42, 1.05)
-		mi.rotation_degrees.y = float(i) * 37.0
+		mi.position = Vector3(cos(ang) * 0.72, hy + 0.08, sin(ang) * 0.72)
+		mi.rotation_degrees = Vector3(float((i * 13) % 24) - 12.0, float(i) * 37.0, float((i * 9) % 18) - 9.0)
 		add_child(mi)
 	for i in 5:
 		var logm := MeshInstance3D.new()

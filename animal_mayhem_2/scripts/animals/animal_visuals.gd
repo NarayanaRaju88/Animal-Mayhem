@@ -109,7 +109,7 @@ static func _buffalo(p: Node3D) -> void:
 	var zs := [0.52, 0.52, -0.72, -0.72]
 	for i in 4:
 		var pivot := _pivot(p, names[i], Vector3(xs[i], 0.84, zs[i]))
-		var thick := 0.125 if i > 1 else 0.105
+		var thick := 0.155 if i > 1 else 0.128
 		_mesh(pivot, OrganicMesh.loft(PackedVector3Array([
 			Vector3(0, 0.04, 0.02), Vector3(0, -0.2, 0.02), Vector3(0, -0.42, 0.01), Vector3(0, -0.58, 0.02),
 			Vector3(0, -0.76, 0.03)
