@@ -28,7 +28,11 @@ Modify: Yes. Commercial use: Yes. Redistribution in APK: Yes. Attribution: not r
 
 1K JPG/HDR variants. Maps: albedo (`diff`), OpenGL normal (`nor_gl`), roughness (`rough`).
 
-## Animal 3D assets — audit (PR #20)
+## PR #21 visual polish
+
+No new external files. Jungle props still use the CC0 maps above. Animals remain lofted constructed meshes (not photoreal). Tent/fire/trees/rocks are still in-engine geometry with improved clustering and A-frame tent construction.
+
+## PR #20
 
 Suitable licensed realistic animal asset was not available.
 

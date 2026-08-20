@@ -21,13 +21,16 @@ func _ready() -> void:
 	rng.seed = 24
 	for i in 7:
 		var mi := MeshInstance3D.new()
-		var sph := SphereMesh.new()
-		sph.radius = rng.randf_range(0.7, 1.35)
-		mi.mesh = sph
+		var slab := BoxMesh.new()
+		slab.size = Vector3(
+			rng.randf_range(1.05, 1.85),
+			rng.randf_range(0.42, 0.78),
+			rng.randf_range(0.95, 1.65)
+		)
+		mi.mesh = slab
 		mi.material_override = wall if i % 2 == 0 else aerial
-		mi.position = Vector3(rng.randf_range(-1.6, 1.6), 0.6 + i * 0.52, rng.randf_range(-1.0, 1.0))
-		mi.scale = Vector3(rng.randf_range(1.1, 1.8), rng.randf_range(0.55, 0.95), rng.randf_range(1.0, 1.6))
-		mi.rotation_degrees = Vector3(rng.randf_range(-20, 20), rng.randf() * 360.0, rng.randf_range(-16, 16))
+		mi.position = Vector3(rng.randf_range(-1.6, 1.6), 0.55 + i * 0.52, rng.randf_range(-1.0, 1.0))
+		mi.rotation_degrees = Vector3(rng.randf_range(-16, 16), rng.randf() * 360.0, rng.randf_range(-12, 12))
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		add_child(mi)
 	var lip := BoxMesh.new()

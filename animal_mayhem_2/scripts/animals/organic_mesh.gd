@@ -3,7 +3,13 @@ extends RefCounted
 ## Lathed / lofted meshes so animals are not a pile of obvious capsules.
 
 
-static func loft(centers: PackedVector3Array, radii: PackedFloat32Array, radial := 10) -> ArrayMesh:
+static func loft(
+		centers: PackedVector3Array,
+		radii: PackedFloat32Array,
+		radial := 10,
+		wide := 1.0,
+		tall := 0.86
+	) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var n := centers.size()
@@ -29,8 +35,9 @@ static func loft(centers: PackedVector3Array, radii: PackedFloat32Array, radial 
 		var uvring := PackedVector2Array()
 		for r in radial:
 			var a := TAU * float(r) / float(radial)
-			var squash := 0.82 + 0.18 * absf(cos(a))
-			var p: Vector3 = centers[i] + (binorm * cos(a) + norm * sin(a)) * radii[i] * squash
+			var squash_w := wide * (0.88 + 0.12 * absf(cos(a)))
+			var squash_h := tall * (0.92 + 0.08 * absf(sin(a)))
+			var p: Vector3 = centers[i] + binorm * cos(a) * radii[i] * squash_w + norm * sin(a) * radii[i] * squash_h
 			ring.append(p)
 			uvring.append(Vector2(float(r) / float(radial), float(i) / float(maxi(n - 1, 1))))
 		rings.append(ring)
@@ -49,7 +56,7 @@ static func curve_horn(points: PackedVector3Array, start_r: float, end_r: float,
 	for i in points.size():
 		var t := float(i) / float(maxi(points.size() - 1, 1))
 		radii.append(lerpf(start_r, end_r, t))
-	return loft(points, radii, radial)
+	return loft(points, radii, radial, 1.05, 0.78)
 
 
 static func _quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, ua: Vector2, ub: Vector2, uc: Vector2, ud: Vector2) -> void:
