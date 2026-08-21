@@ -4,6 +4,8 @@ extends Area3D
 
 func _ready() -> void:
 	monitoring = true
+	# Animals use layers 2/4/8 (buffalo/monkey/snake). Default mask 1 never sees them.
+	collision_mask = 2 | 4 | 8
 	var col := CollisionShape3D.new()
 	var sph := SphereShape3D.new()
 	sph.radius = 1.8
@@ -88,6 +90,15 @@ func _ready() -> void:
 	hm.position = Vector3(0, 1.24, 0.2)
 	add_child(hm)
 	body_entered.connect(_on_enter)
+
+
+func _physics_process(_delta: float) -> void:
+	if not GameState.coil_done or GameState.step == GameState.Step.DONE:
+		return
+	for body in get_overlapping_bodies():
+		if body is AnimalController:
+			GameState.mark_complete()
+			return
 
 
 func _on_enter(body: Node) -> void:

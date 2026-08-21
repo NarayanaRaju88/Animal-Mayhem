@@ -10,6 +10,7 @@ var probe: InteractProbe
 var hud: CanvasLayer
 var look_dragging := false
 var look_pointer := -1
+var _validation_lock_follow := false
 
 @onready var builder: JungleBuilder = $Jungle
 
@@ -65,7 +66,7 @@ func _process(delta: float) -> void:
 		forest_amt *= 0.72
 	var camp_amt := clampf(1.0 - from_camp / 9.0, 0.0, 1.0)
 	AudioManager.set_mix(water_amt, forest_amt, camp_amt)
-	if camera.target:
+	if camera.target and not _validation_lock_follow:
 		camera.distance = lerp(camera.distance, active.definition.camera_distance, 1.0 - exp(-delta * 2.4))
 		camera.height = lerp(camera.height, active.definition.camera_height, 1.0 - exp(-delta * 2.4))
 
@@ -99,6 +100,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventScreenDrag:
 		if event.position.x > get_viewport().get_visible_rect().size.x * 0.55:
 			camera.add_look(event.relative)
+	if OS.get_environment("AM2_SCREENSHOT") != "" and event is InputEventKey:
+		if event.pressed and not event.echo and event.keycode == KEY_F7:
+			_validation_goto_explorer()
 
 
 func try_action() -> void:
@@ -139,9 +143,13 @@ func _switch(index: int, instant := false) -> void:
 func _on_objective(text: String) -> void:
 	if hud:
 		hud.call("set_objective", text)
+	if OS.get_environment("AM2_SCREENSHOT") != "":
+		print("ANIMAL_MAYHEM_2_OBJECTIVE ", text)
 
 
 func _on_complete() -> void:
+	if OS.get_environment("AM2_SCREENSHOT") != "":
+		print("ANIMAL_MAYHEM_2_COMPLETE")
 	if hud:
 		hud.call("show_complete")
 
@@ -191,11 +199,14 @@ func _apply_validation_shot(shot: String) -> void:
 			animal_i = 0
 			xz = Vector2(12.5, 0.0)
 		"E":
+			# Stand just south of the climb volume so the monkey is readable.
 			animal_i = 1
-			xz = Vector2(24.5, 12.0)
+			xz = Vector2(24.5, 9.9)
 		"F":
+			# Landmark stays at (33.8, -8.5). Spawn beside it, outside the river
+			# basin (x>=34) so physics does not eject the snake into the water.
 			animal_i = 2
-			xz = Vector2(33.8, -8.5)
+			xz = Vector2(35.2, -8.5)
 		"H":
 			animal_i = 0
 			xz = Vector2(26.0, -9.0)
@@ -208,12 +219,45 @@ func _apply_validation_shot(shot: String) -> void:
 	var a := animals[animal_i]
 	var y := builder.height_at(xz.x, xz.y) + 0.25
 	a.global_position = Vector3(xz.x, y, xz.y)
+	a.velocity = Vector3.ZERO
 	a.rotation.y = 1.2
+	_validation_lock_follow = false
 	camera.yaw = 2.55
 	camera.pitch = -0.22
+	if shot == "F":
+		_validation_lock_follow = true
+		camera.distance = 3.6
+		camera.height = 1.12
+		camera.yaw = 1.18
+		camera.pitch = -0.05
+	elif shot == "E":
+		_validation_lock_follow = true
+		camera.distance = 6.4
+		camera.height = 2.35
+		camera.yaw = 0.92
+		camera.pitch = -0.08
 	camera.global_position = a.global_position + Vector3(
 		sin(camera.yaw) * camera.distance,
 		camera.height,
 		cos(camera.yaw) * camera.distance
 	)
 	camera.target = a
+
+
+func _validation_goto_explorer() -> void:
+	## Isolated validation teleport. Does not touch GameState.
+	if animals.is_empty() or camera == null:
+		return
+	var a := animals[active_index]
+	var xz := Vector2(44.5, 0.0)
+	var y := builder.height_at(xz.x, xz.y) + 0.25
+	a.global_position = Vector3(xz.x, y, xz.y)
+	a.velocity = Vector3.ZERO
+	camera.yaw = 2.2
+	camera.pitch = -0.12
+	camera.global_position = a.global_position + Vector3(
+		sin(camera.yaw) * camera.distance,
+		camera.height,
+		cos(camera.yaw) * camera.distance
+	)
+	print("ANIMAL_MAYHEM_2_VALIDATION_EXPLORER")
