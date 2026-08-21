@@ -143,8 +143,11 @@ func _animate(delta: float, moving: float, speed: float) -> void:
 	if definition.id == &"snake":
 		_animate_snake(run)
 		return
-	var breath := sin(_phase * 0.85) * (0.018 if not run else 0.004)
-	_visual.position.y = breath
+	var breath := sin(_phase * 0.85) * (0.012 if not run else 0.003)
+	_visual.position.y = 0.0
+	var body := _visual.get_node_or_null("Body")
+	if body:
+		body.scale = Vector3(1.0 + breath * 0.35, 1.0 + breath, 1.0 + breath * 0.2)
 	var weight := sin(_phase * 0.55) * (1.8 if not run else 0.0)
 	if run:
 		_visual.rotation_degrees.z = sin(_phase * 2.0) * 2.1
@@ -210,19 +213,19 @@ func _animate_snake(run: bool) -> void:
 			if coil:
 				var ang := i * (TAU / maxf(float(count), 1.0)) + _action_t * 4.2
 				var rad := 0.22 + i * 0.012
-				c.position = Vector3(cos(ang) * rad, 0.08 + i * 0.018, sin(ang) * rad)
+				c.position = Vector3(cos(ang) * rad, 0.055 + i * 0.018, sin(ang) * rad)
 			else:
-				var amp := 0.22 if run else 0.05
+				var amp := 0.22 if run else 0.09
 				var lag := float(i) * 0.52
 				var wave := sin(_phase * 2.8 - lag)
 				c.position.x = wave * amp * (1.0 - float(i) / 26.0)
-				c.position.y = 0.08 + absf(wave) * 0.012
+				c.position.y = 0.055 + absf(wave) * 0.016
 				c.position.z = -float(i) * spacing
 			i += 1
 	var hd := _visual.get_node_or_null("Head")
 	if hd:
 		if coil:
-			hd.position = Vector3(0.32, 0.18, 0.04)
+			hd.position = Vector3(0.32, 0.16, 0.04)
 			hd.rotation_degrees.y = _action_t * 90.0
 			hd.rotation_degrees.x = -8.0
 		else:
@@ -236,7 +239,7 @@ func _animate_snake(run: bool) -> void:
 	var body := _visual.get_node_or_null("BodyMesh")
 	if body and segs:
 		var pts := PackedVector3Array()
-		pts.append(hd.position if hd else Vector3(0, 0.11, 0.26))
+		pts.append(hd.position if hd else Vector3(0, 0.1, 0.26))
 		for c in segs.get_children():
 			pts.append((c as Node3D).position)
 		SnakeTube.rebuild(body as MeshInstance3D, pts, body.material_override)

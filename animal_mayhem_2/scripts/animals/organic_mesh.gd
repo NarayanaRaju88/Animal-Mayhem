@@ -35,8 +35,9 @@ static func loft(
 		var uvring := PackedVector2Array()
 		for r in radial:
 			var a := TAU * float(r) / float(radial)
-			var squash_w := wide * (0.88 + 0.12 * absf(cos(a)))
-			var squash_h := tall * (0.92 + 0.08 * absf(sin(a)))
+			# Gentle ellipse; avoid the 4-lobe capsule look from strong abs(cos) squash.
+			var squash_w := wide * (0.96 + 0.04 * absf(cos(a)))
+			var squash_h := tall * (0.97 + 0.03 * absf(sin(a)))
 			var p: Vector3 = centers[i] + binorm * cos(a) * radii[i] * squash_w + norm * sin(a) * radii[i] * squash_h
 			ring.append(p)
 			uvring.append(Vector2(float(r) / float(radial), float(i) / float(maxi(n - 1, 1))))
