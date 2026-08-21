@@ -143,24 +143,42 @@ func _animate(delta: float, moving: float, speed: float) -> void:
 	if definition.id == &"snake":
 		_animate_snake(run)
 		return
-	var breath := sin(_phase) * (0.01 if not run else 0.003)
-	_visual.position.y = breath
+	var breath := sin(_phase * 0.85) * (0.012 if not run else 0.003)
+	_visual.position.y = 0.0
+	var body := _visual.get_node_or_null("Body")
+	if body:
+		body.scale = Vector3(1.0 + breath * 0.35, 1.0 + breath, 1.0 + breath * 0.2)
+	var weight := sin(_phase * 0.55) * (1.8 if not run else 0.0)
+	if run:
+		_visual.rotation_degrees.z = sin(_phase * 2.0) * 2.1
+		_visual.rotation_degrees.x = sin(_phase * 2.0) * 1.6
+	else:
+		_visual.rotation_degrees.z = lerpf(_visual.rotation_degrees.z, weight, 0.08)
+		_visual.rotation_degrees.x = lerpf(_visual.rotation_degrees.x, 0.0, 0.1)
+	if action_name == "push":
+		_visual.rotation_degrees.x = lerpf(_visual.rotation_degrees.x, 10.0, 0.12)
 	var head := _visual.get_node_or_null("Head")
 	if head:
 		if action_name == "push":
-			head.rotation_degrees.x = lerpf(head.rotation_degrees.x, 22.0, 0.15)
+			head.rotation_degrees.x = lerpf(head.rotation_degrees.x, 26.0, 0.16)
 			head.rotation_degrees.y = 0.0
 		elif action_name == "climb":
 			head.rotation_degrees.x = -12.0
 			head.rotation_degrees.y = sin(_phase * 3.0) * 8.0
 		else:
-			head.rotation_degrees.y = sin(_phase * 0.45) * (8.0 if not run else 3.0)
-			head.rotation_degrees.x = sin(_phase * 0.3) * 3.0
-	var swing := sin(_phase * 2.0) * (8.0 + gait * 20.0)
+			head.rotation_degrees.y = sin(_phase * 0.45) * (10.0 if not run else 3.5)
+			head.rotation_degrees.x = sin(_phase * 0.3) * (4.0 if not run else 2.0)
+		var ear_l := head.get_node_or_null("EarL")
+		var ear_r := head.get_node_or_null("EarR")
+		if ear_l:
+			ear_l.rotation_degrees.z = sin(_phase * 1.7) * (8.0 if not run else 3.0)
+		if ear_r:
+			ear_r.rotation_degrees.z = sin(_phase * 1.7 + 0.8) * (8.0 if not run else 3.0)
+	var swing := sin(_phase * 2.0) * (9.0 + gait * 22.0)
 	if action_name == "climb":
 		swing = sin(_phase * 4.2) * 38.0
 	if action_name == "push":
-		swing = sin(_phase * 3.0) * 8.0
+		swing = sin(_phase * 2.4) * 5.0
 	for nm in ["LegFL", "LegBR", "LegL", "ArmR"]:
 		var n := _visual.get_node_or_null(nm)
 		if n:
@@ -171,7 +189,8 @@ func _animate(delta: float, moving: float, speed: float) -> void:
 			n.rotation_degrees.x = -swing
 	var tail := _visual.get_node_or_null("Tail")
 	if tail:
-		tail.rotation_degrees.y = sin(_phase * 1.4) * (12.0 if run else 4.0)
+		tail.rotation_degrees.y = sin(_phase * 1.4) * (14.0 if run else 5.0)
+		tail.rotation_degrees.x = sin(_phase * 0.9) * 4.0
 	if _dust:
 		_dust.emitting = run and active
 	if run:
@@ -186,32 +205,41 @@ func _animate_snake(run: bool) -> void:
 	_visual.position.y = 0.0
 	var segs := _visual.get_node_or_null("Segments")
 	var coil := action_name == "coil"
+	var spacing := 0.175
 	if segs:
 		var i := 0
+		var count := segs.get_child_count()
 		for c in segs.get_children():
 			if coil:
-				var ang := i * 0.55 + _action_t * 7.0
-				c.position = Vector3(cos(ang) * 0.26, 0.12 + i * 0.035, sin(ang) * 0.26)
-				c.rotation_degrees = Vector3(90, rad_to_deg(ang), 0)
+				var ang := i * (TAU / maxf(float(count), 1.0)) + _action_t * 4.2
+				var rad := 0.22 + i * 0.012
+				c.position = Vector3(cos(ang) * rad, 0.055 + i * 0.018, sin(ang) * rad)
 			else:
-				var amp := 0.22 if run else 0.05
-				var wave := sin(_phase * 2.4 + i * 0.62)
-				var wave2 := sin(_phase * 2.4 + (i + 1) * 0.62)
-				c.position.x = wave * amp
-				c.position.y = 0.14
-				c.position.z = -i * 0.2
-				c.rotation_degrees.y = rad_to_deg(atan2((wave2 - wave) * amp, -0.2))
-				c.rotation_degrees.x = 90.0
+				var amp := 0.22 if run else 0.09
+				var lag := float(i) * 0.52
+				var wave := sin(_phase * 2.8 - lag)
+				c.position.x = wave * amp * (1.0 - float(i) / 26.0)
+				c.position.y = 0.055 + absf(wave) * 0.016
+				c.position.z = -float(i) * spacing
 			i += 1
 	var hd := _visual.get_node_or_null("Head")
 	if hd:
 		if coil:
-			hd.position = Vector3(0.28, 0.22, 0.0)
-			hd.rotation_degrees.y = _action_t * 120.0
+			hd.position = Vector3(0.32, 0.16, 0.04)
+			hd.rotation_degrees.y = _action_t * 90.0
+			hd.rotation_degrees.x = -8.0
 		else:
-			hd.position = Vector3(0, 0.16, 0.28)
-			hd.rotation_degrees.y = sin(_phase * 0.9) * (16.0 if run else 5.0)
-			hd.rotation_degrees.x = sin(_phase * 1.1) * (6.0 if run else 2.0)
+			var lead := sin(_phase * 2.6) * (0.16 if run else 0.04)
+			hd.position = Vector3(lead, 0.1, 0.26)
+			hd.rotation_degrees.y = sin(_phase * 0.9) * (18.0 if run else 6.0)
+			hd.rotation_degrees.x = sin(_phase * 1.1) * (5.0 if run else 2.0)
 		var tongue := hd.get_node_or_null("Tongue")
 		if tongue:
 			tongue.scale.z = 1.0 + abs(sin(_phase * 6.0)) * 0.9
+	var body := _visual.get_node_or_null("BodyMesh")
+	if body and segs:
+		var pts := PackedVector3Array()
+		pts.append(hd.position if hd else Vector3(0, 0.1, 0.26))
+		for c in segs.get_children():
+			pts.append((c as Node3D).position)
+		SnakeTube.rebuild(body as MeshInstance3D, pts, body.material_override)

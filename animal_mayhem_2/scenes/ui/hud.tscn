@@ -14,56 +14,74 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="TopBarBg" type="Panel" parent="Root"]
-modulate = Color(1, 1, 1, 0.55)
+[node name="ObjectiveCard" type="PanelContainer" parent="Root"]
 layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 16.0
-offset_top = 12.0
-offset_right = -16.0
-offset_bottom = 68.0
+offset_left = 32.0
+offset_top = 28.0
+offset_right = 360.0
+offset_bottom = 108.0
 mouse_filter = 2
 
-[node name="TopBar" type="HBoxContainer" parent="Root"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 28.0
-offset_top = 16.0
-offset_right = -28.0
-offset_bottom = 64.0
-theme_override_constants/separation = 16
-
-[node name="Objective" type="Label" parent="Root/TopBar"]
+[node name="VBox" type="VBoxContainer" parent="Root/ObjectiveCard"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.95, 0.9, 0.78, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_constants/separation = 3
+mouse_filter = 2
+
+[node name="MissionId" type="Label" parent="Root/ObjectiveCard/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.74, 0.58, 0.88)
+theme_override_font_sizes/font_size = 12
+text = "MISSION 01  ·  THE LOST EXPLORER"
+mouse_filter = 2
+
+[node name="Objective" type="Label" parent="Root/ObjectiveCard/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.91, 0.82, 0.96)
+theme_override_font_sizes/font_size = 16
 text = "Find a way through the blocked jungle path"
-autowrap_mode = 2
+autowrap_mode = 3
+mouse_filter = 2
 
-[node name="AnimalName" type="Label" parent="Root/TopBar"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.83, 0.63, 0.18, 1)
-theme_override_font_sizes/font_size = 20
-text = "Buffalo"
-
-[node name="Pause" type="Button" parent="Root/TopBar"]
-custom_minimum_size = Vector2(56, 48)
-layout_mode = 2
+[node name="Pause" type="Button" parent="Root"]
+custom_minimum_size = Vector2(52, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -76.0
+offset_top = 28.0
+offset_right = -24.0
+offset_bottom = 68.0
 text = "II"
 process_mode = 3
+
+[node name="AnimalName" type="Label" parent="Root"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -88.0
+offset_top = -118.0
+offset_right = 88.0
+offset_bottom = -90.0
+theme_override_colors/font_color = Color(0.90, 0.80, 0.48, 0.92)
+theme_override_font_sizes/font_size = 14
+text = "Buffalo"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
 
 [node name="Joystick" type="Control" parent="Root"]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 36.0
-offset_top = -220.0
-offset_right = 216.0
-offset_bottom = -40.0
+offset_left = 40.0
+offset_top = -192.0
+offset_right = 184.0
+offset_bottom = -48.0
 mouse_filter = 0
 
 [node name="Ring" type="Panel" parent="Root/Joystick"]
@@ -76,27 +94,27 @@ modulate = Color(1, 1, 1, 0.28)
 
 [node name="Knob" type="Panel" parent="Root/Joystick"]
 layout_mode = 0
-offset_left = 58.0
-offset_top = 58.0
-offset_right = 122.0
-offset_bottom = 122.0
+offset_left = 50.0
+offset_top = 50.0
+offset_right = 94.0
+offset_bottom = 94.0
 mouse_filter = 2
-modulate = Color(0.95, 0.9, 0.7, 0.7)
+modulate = Color(0.95, 0.90, 0.72, 0.70)
 
 [node name="ActionButton" type="Button" parent="Root"]
 visible = false
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(96, 96)
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -196.0
-offset_top = -196.0
-offset_right = -52.0
-offset_bottom = -52.0
-theme_override_font_sizes/font_size = 22
+offset_left = -144.0
+offset_top = -152.0
+offset_right = -40.0
+offset_bottom = -48.0
+theme_override_font_sizes/font_size = 15
 text = "PUSH"
 
 [node name="Portraits" type="HBoxContainer" parent="Root"]
@@ -106,70 +124,83 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -210.0
-offset_top = -92.0
-offset_right = 210.0
+offset_left = -180.0
+offset_top = -80.0
+offset_right = 180.0
 offset_bottom = -28.0
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
 alignment = 1
 
 [node name="B0" type="Button" parent="Root/Portraits"]
-custom_minimum_size = Vector2(120, 56)
+custom_minimum_size = Vector2(108, 40)
 layout_mode = 2
+clip_text = true
 text = "Buffalo"
 
 [node name="B1" type="Button" parent="Root/Portraits"]
-custom_minimum_size = Vector2(120, 56)
+custom_minimum_size = Vector2(108, 40)
 layout_mode = 2
+clip_text = true
 text = "Monkey"
 
 [node name="B2" type="Button" parent="Root/Portraits"]
-custom_minimum_size = Vector2(120, 56)
+custom_minimum_size = Vector2(108, 40)
 layout_mode = 2
+clip_text = true
 text = "Snake"
 
-[node name="Intro" type="Control" parent="Root"]
+[node name="Intro" type="Panel" parent="Root"]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -220.0
-offset_top = 84.0
-offset_right = 220.0
-offset_bottom = 188.0
+offset_left = -200.0
+offset_top = 120.0
+offset_right = 200.0
+offset_bottom = 204.0
 mouse_filter = 2
 
 [node name="MissionId" type="Label" parent="Root/Intro"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 22.0
-theme_override_colors/font_color = Color(0.78, 0.72, 0.52, 0.9)
-theme_override_font_sizes/font_size = 14
+offset_left = 12.0
+offset_top = 8.0
+offset_right = -12.0
+offset_bottom = 26.0
+theme_override_colors/font_color = Color(0.78, 0.74, 0.58, 0.90)
+theme_override_font_sizes/font_size = 12
 text = "MISSION 01"
 horizontal_alignment = 1
+mouse_filter = 2
 
 [node name="MissionTitle" type="Label" parent="Root/Intro"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 20.0
-offset_bottom = 56.0
-theme_override_colors/font_color = Color(0.96, 0.92, 0.82, 0.95)
-theme_override_font_sizes/font_size = 26
+offset_left = 12.0
+offset_top = 24.0
+offset_right = -12.0
+offset_bottom = 54.0
+theme_override_colors/font_color = Color(0.96, 0.92, 0.82, 0.96)
+theme_override_font_sizes/font_size = 20
 text = "THE LOST EXPLORER"
 horizontal_alignment = 1
+mouse_filter = 2
 
 [node name="MissionHint" type="Label" parent="Root/Intro"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 56.0
-offset_bottom = 84.0
-theme_override_colors/font_color = Color(0.86, 0.88, 0.78, 0.85)
-theme_override_font_sizes/font_size = 16
-text = "Find the missing explorer."
+offset_left = 12.0
+offset_top = 52.0
+offset_right = -12.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(0.84, 0.86, 0.76, 0.88)
+theme_override_font_sizes/font_size = 14
+text = "Find a way through the jungle."
 horizontal_alignment = 1
+mouse_filter = 2
 
 [node name="LookHint" type="Label" parent="Root"]
 layout_mode = 1
@@ -177,13 +208,14 @@ anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -280.0
-offset_top = 88.0
+offset_top = 76.0
 offset_right = -28.0
-offset_bottom = 120.0
-theme_override_colors/font_color = Color(0.8, 0.85, 0.78, 0.55)
-theme_override_font_sizes/font_size = 14
+offset_bottom = 98.0
+theme_override_colors/font_color = Color(0.80, 0.84, 0.76, 0.45)
+theme_override_font_sizes/font_size = 13
 text = "Drag right side to look"
 horizontal_alignment = 2
+mouse_filter = 2
 
 [node name="Complete" type="ColorRect" parent="."]
 visible = false
@@ -201,24 +233,24 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -240.0
-offset_top = -140.0
-offset_right = 240.0
-offset_bottom = 140.0
+offset_left = -220.0
+offset_top = -128.0
+offset_right = 220.0
+offset_bottom = 128.0
 
 [node name="VBox" type="VBoxContainer" parent="Complete/Panel"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="Complete/Panel/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 26
 text = "MISSION COMPLETE"
 horizontal_alignment = 1
 
 [node name="Name" type="Label" parent="Complete/Panel/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 18
 text = "The Lost Explorer"
 horizontal_alignment = 1
 
@@ -226,9 +258,9 @@ horizontal_alignment = 1
 layout_mode = 2
 text = "Explorer found. Jungle route secured."
 horizontal_alignment = 1
-autowrap_mode = 2
+autowrap_mode = 3
 
 [node name="Continue" type="Button" parent="Complete/Panel/VBox"]
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Continue"

@@ -18,15 +18,27 @@ static func pbr(stem: String, uv_scale := 1.0) -> StandardMaterial3D:
 	return m
 
 
-static func animal(tex_name: String, tint: Color, rough := 0.78) -> StandardMaterial3D:
+static func animal(
+		tex_name: String,
+		tint: Color,
+		rough := 0.78,
+		rim := 0.08,
+		nrm_scale := 0.55
+	) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = load("res://assets/animals/textures/%s" % tex_name)
 	m.albedo_color = tint
 	m.roughness = rough
 	m.metallic = 0.0
-	m.rim_enabled = true
-	m.rim = 0.12
-	m.rim_tint = 0.28
+	var nrm_name := tex_name.get_basename() + "_n.png"
+	var nrm_path := "res://assets/animals/textures/%s" % nrm_name
+	if ResourceLoader.exists(nrm_path):
+		m.normal_enabled = true
+		m.normal_texture = load(nrm_path)
+		m.normal_scale = nrm_scale
+	m.rim_enabled = rim > 0.001
+	m.rim = rim
+	m.rim_tint = 0.18
 	m.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
 	return m
 
@@ -45,15 +57,19 @@ uniform sampler2D mud_n : hint_normal, filter_linear_mipmap_anisotropic;
 uniform sampler2D ground_r : hint_default_white, filter_linear_mipmap;
 uniform sampler2D path_r : hint_default_white, filter_linear_mipmap;
 uniform sampler2D mud_r : hint_default_white, filter_linear_mipmap;
+uniform sampler2D litter : source_color, filter_linear_mipmap_anisotropic;
 varying vec3 world_pos;
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 void fragment() {
-	vec2 uv = world_pos.xz * 0.18;
-	vec3 g = texture(ground, uv).rgb;
-	vec3 p = texture(path_tex, uv * 1.6).rgb;
-	vec3 m = texture(mud, uv * 1.2).rgb;
+	vec2 uv_a = world_pos.xz * 0.145;
+	vec2 uv_b = world_pos.xz * 0.053 + vec2(13.7, 8.2);
+	float macro = clamp(0.5 + 0.5 * sin(world_pos.x * 0.061 + 1.7) * cos(world_pos.z * 0.054), 0.22, 0.78);
+	vec3 g = mix(texture(ground, uv_a).rgb, texture(ground, uv_b).rgb, macro);
+	vec3 p = mix(texture(path_tex, uv_a * 1.55).rgb, texture(path_tex, uv_b * 1.7).rgb, 1.0 - macro);
+	vec3 m = mix(texture(mud, uv_a * 1.15).rgb, texture(mud, uv_b * 1.3).rgb, macro);
+	vec3 lit = texture(litter, uv_b * 1.85).rgb;
 	float path_w = smoothstep(2.35, 0.55, abs(world_pos.z));
 	path_w *= smoothstep(-5.0, 1.0, world_pos.x) * smoothstep(50.0, 42.0, world_pos.x);
 	float river = smoothstep(0.15, -0.4, world_pos.y);
@@ -62,15 +78,17 @@ void fragment() {
 	float camp = 1.0 - smoothstep(0.0, 6.5, length(world_pos.xz));
 	vec3 col = mix(g, p, path_w);
 	col = mix(col, m, clamp(river * 0.85 + camp * 0.35, 0.0, 1.0));
-	vec3 nrm = mix(texture(ground_n, uv).rgb, texture(path_n, uv * 1.6).rgb, path_w);
-	nrm = mix(nrm, texture(mud_n, uv * 1.2).rgb, clamp(river, 0.0, 1.0));
-	float rgh = mix(texture(ground_r, uv).r, texture(path_r, uv * 1.6).r, path_w);
-	rgh = mix(rgh, texture(mud_r, uv * 1.2).r, clamp(river, 0.0, 1.0));
-	ALBEDO = col * 0.92;
+	float litter_w = (1.0 - path_w) * (1.0 - camp) * (1.0 - river) * (0.16 + 0.18 * macro);
+	col = mix(col, lit, clamp(litter_w, 0.0, 0.34));
+	vec3 nrm = mix(texture(ground_n, uv_a).rgb, texture(path_n, uv_a * 1.55).rgb, path_w);
+	nrm = mix(nrm, texture(mud_n, uv_a * 1.15).rgb, clamp(river, 0.0, 1.0));
+	float rgh = mix(texture(ground_r, uv_a).r, texture(path_r, uv_a * 1.55).r, path_w);
+	rgh = mix(rgh, texture(mud_r, uv_a * 1.15).r, clamp(river, 0.0, 1.0));
+	ALBEDO = col * 0.90;
 	NORMAL_MAP = nrm;
-	ROUGHNESS = clamp(rgh * 0.95 + 0.08, 0.35, 1.0);
+	ROUGHNESS = clamp(rgh * 0.92 + 0.14, 0.42, 1.0);
 	METALLIC = 0.0;
-	SPECULAR = 0.25;
+	SPECULAR = 0.18;
 }
 """
 	var mat := ShaderMaterial.new()
@@ -85,4 +103,14 @@ void fragment() {
 	mat.set_shader_parameter("ground_r", load("%s/forest_ground_04_rough_1k.jpg" % tdir))
 	mat.set_shader_parameter("path_r", load("%s/grass_path_3_rough_1k.jpg" % tdir))
 	mat.set_shader_parameter("mud_r", load("%s/brown_mud_03_rough_1k.jpg" % tdir))
+	mat.set_shader_parameter("litter", load("%s/forest_leaves_03_diff_1k.jpg" % tdir))
 	return mat
+
+
+static func fabric(tint: Color, uv_scale := 2.8) -> StandardMaterial3D:
+	var m := pbr("brown_mud_03", uv_scale)
+	m.albedo_color = tint
+	m.roughness = 0.97
+	m.metallic = 0.0
+	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	return m
