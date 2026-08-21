@@ -1,0 +1,257 @@
+# Godot 4.4.1 Android debug APK for Animal Mayhem 2.0 (animal_mayhem_2).
+# This is not the Flutter prototype workflow in android-debug-apk.yml.
+name: Godot Android debug APK
+
+on:
+  push:
+    branches: [visual/commercial-quality-game-foundation]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: godot-android-debug-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION_FULL: "4.4.1.stable.official.49a5bc7b6"
+  GODOT_RELEASE_TAG: "4.4.1-stable"
+  GODOT_TEMPLATE_DIR_NAME: "4.4.1.stable"
+  GODOT_PRESET: "Android"
+  GODOT_PACKAGE: "com.animalmayhem.adventure"
+  APK_RELATIVE: "animal_mayhem_2/export/animal-mayhem-2-debug.apk"
+  ANDROID_API: "34"
+  ANDROID_BUILD_TOOLS: "34.0.0"
+  ANDROID_CMDLINE_TOOLS_VERSION: "12266719"
+  JAVA_VERSION: "17"
+  GODOT_LINUX_ZIP: "Godot_v4.4.1-stable_linux.x86_64.zip"
+  GODOT_TEMPLATES_TPZ: "Godot_v4.4.1-stable_export_templates.tpz"
+  GODOT_LINUX_ZIP_SHA512: "ef4e76880a514257175544952c61191106fdef3095b909bafed9fcbeb230c3e5533920a0f3012882dd4bbde83028a67549825794e2d2c3cf76eba7918b71370e"
+  GODOT_TEMPLATES_TPZ_SHA512: "8f461c7d6e91a0fbabfc95b1e4ca70ff1732c6f2920956a16b086ec2a85b5f7e238baf4dbce60dcc5630fae3bcb9a1fa2ae2027b92cb495c02d082705715e441"
+  GODOT_DOWNLOAD_BASE: "https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable"
+
+jobs:
+  build-godot-debug-apk:
+    name: Build Godot 4.4.1 Android debug APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Confirm Godot project and existing Android preset
+        run: |
+          set -euo pipefail
+          test -f animal_mayhem_2/project.godot
+          test -f animal_mayhem_2/export_presets.cfg
+          grep -F 'config/name="Animal Mayhem 2.0"' animal_mayhem_2/project.godot
+          grep -F 'package="com.animalmayhem.adventure"' animal_mayhem_2/project.godot
+          grep -F 'name="Android"' animal_mayhem_2/export_presets.cfg
+          grep -F 'package/unique_name="com.animalmayhem.adventure"' animal_mayhem_2/export_presets.cfg
+          grep -F 'gradle_build/use_gradle_build=false' animal_mayhem_2/export_presets.cfg
+          grep -F 'export_path="export/animal-mayhem-2-debug.apk"' animal_mayhem_2/export_presets.cfg
+          if [ -d animal_mayhem_2/android/build ]; then
+            echo "Unexpected android/build Gradle project present; this workflow must not use Gradle export."
+            exit 1
+          fi
+
+      - name: Set up OpenJDK 17
+        uses: actions/setup-java@v4.7.1
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Confirm JDK 17
+        run: |
+          set -euo pipefail
+          java -version 2>&1
+          java -version 2>&1 | grep -E 'version "17(\.|$)'
+          test -n "${JAVA_HOME}"
+          test -x "${JAVA_HOME}/bin/java"
+          echo "JAVA_HOME=${JAVA_HOME}"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3.2.2
+        with:
+          cmdline-tools-version: "12266719"
+          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
+
+      - name: Confirm Android SDK packages
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "${SDK}"
+          test -d "${SDK}/platforms/android-34"
+          test -d "${SDK}/build-tools/34.0.0"
+          test -x "${SDK}/build-tools/34.0.0/aapt"
+          test -x "${SDK}/build-tools/34.0.0/apksigner"
+          test -x "${SDK}/build-tools/34.0.0/zipalign"
+          echo "ANDROID_HOME=${SDK}"
+          echo "${SDK}/build-tools/34.0.0" >> "${GITHUB_PATH}"
+          echo "ANDROID_HOME=${SDK}" >> "${GITHUB_ENV}"
+          echo "ANDROID_SDK_ROOT=${SDK}" >> "${GITHUB_ENV}"
+
+      - name: Create Android debug keystore
+        run: |
+          set -euo pipefail
+          mkdir -p "${HOME}/.android"
+          KEYSTORE="${HOME}/.android/debug.keystore"
+          if [ ! -f "${KEYSTORE}" ]; then
+            "${JAVA_HOME}/bin/keytool" -genkeypair \
+              -keystore "${KEYSTORE}" \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass android \
+              -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US" \
+              -deststoretype pkcs12
+          fi
+          test -f "${KEYSTORE}"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=${KEYSTORE}" >> "${GITHUB_ENV}"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "${GITHUB_ENV}"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "${GITHUB_ENV}"
+
+      - name: Cache Godot 4.4.1 editor and export templates
+        id: cache-godot
+        uses: actions/cache@v4.2.3
+        with:
+          path: |
+            ${{ runner.temp }}/godot-4.4.1
+            ${{ runner.temp }}/godot-export-templates-4.4.1.stable
+          key: godot-4.4.1-stable-linux-x86_64-official-templates
+
+      - name: Download official Godot 4.4.1 editor and export templates
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/godot-dl" "${RUNNER_TEMP}/godot-4.4.1"
+          cd "${RUNNER_TEMP}/godot-dl"
+          curl -fL --retry 5 --retry-delay 8 -o "${GODOT_LINUX_ZIP}" \
+            "${GODOT_DOWNLOAD_BASE}/${GODOT_LINUX_ZIP}"
+          curl -fL --retry 5 --retry-delay 8 -o "${GODOT_TEMPLATES_TPZ}" \
+            "${GODOT_DOWNLOAD_BASE}/${GODOT_TEMPLATES_TPZ}"
+          echo "${GODOT_LINUX_ZIP_SHA512}  ${GODOT_LINUX_ZIP}" | sha512sum -c -
+          echo "${GODOT_TEMPLATES_TPZ_SHA512}  ${GODOT_TEMPLATES_TPZ}" | sha512sum -c -
+          unzip -q "${GODOT_LINUX_ZIP}" -d "${RUNNER_TEMP}/godot-4.4.1"
+          chmod +x "${RUNNER_TEMP}/godot-4.4.1/Godot_v4.4.1-stable_linux.x86_64"
+          unzip -q "${GODOT_TEMPLATES_TPZ}" -d "${RUNNER_TEMP}/godot-templates-unpack"
+          mkdir -p "${RUNNER_TEMP}/godot-export-templates-4.4.1.stable"
+          mv "${RUNNER_TEMP}/godot-templates-unpack/templates/"* \
+            "${RUNNER_TEMP}/godot-export-templates-4.4.1.stable/"
+          rm -rf "${RUNNER_TEMP}/godot-dl" "${RUNNER_TEMP}/godot-templates-unpack"
+          test -f "${RUNNER_TEMP}/godot-export-templates-4.4.1.stable/android_debug.apk"
+
+      - name: Install Godot editor and 4.4.1 export templates
+        run: |
+          set -euo pipefail
+          GODOT_BIN="${RUNNER_TEMP}/godot-4.4.1/Godot_v4.4.1-stable_linux.x86_64"
+          test -x "${GODOT_BIN}"
+          GOT_VERSION="$("${GODOT_BIN}" --version | tr -d '\r')"
+          echo "Godot --version: ${GOT_VERSION}"
+          test "${GOT_VERSION}" = "${GODOT_VERSION_FULL}"
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_TEMPLATE_DIR_NAME}"
+          cp -a "${RUNNER_TEMP}/godot-export-templates-4.4.1.stable/." \
+            "${HOME}/.local/share/godot/export_templates/${GODOT_TEMPLATE_DIR_NAME}/"
+          test -f "${HOME}/.local/share/godot/export_templates/${GODOT_TEMPLATE_DIR_NAME}/android_debug.apk"
+          echo "GODOT_BIN=${GODOT_BIN}" >> "${GITHUB_ENV}"
+
+      - name: Configure Godot Android SDK and Java paths
+        run: |
+          set -euo pipefail
+          mkdir -p "${HOME}/.config/godot"
+          SDK="${ANDROID_HOME}"
+          cat > "${HOME}/.config/godot/editor_settings-4.4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/java_sdk_path = "${JAVA_HOME}"
+          export/android/android_sdk_path = "${SDK}"
+          export/android/debug_keystore = "${HOME}/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+          grep -F "java_sdk_path = \"${JAVA_HOME}\"" "${HOME}/.config/godot/editor_settings-4.4.tres"
+          grep -F "android_sdk_path = \"${SDK}\"" "${HOME}/.config/godot/editor_settings-4.4.tres"
+
+      - name: Import animal_mayhem_2
+        run: |
+          set -euo pipefail
+          mkdir -p animal_mayhem_2/export
+          "${GODOT_BIN}" --headless --path "${GITHUB_WORKSPACE}/animal_mayhem_2" --import --quit
+
+      - name: Re-apply Godot Android SDK and Java paths
+        run: |
+          set -euo pipefail
+          mkdir -p "${HOME}/.config/godot"
+          SDK="${ANDROID_HOME}"
+          cat > "${HOME}/.config/godot/editor_settings-4.4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/java_sdk_path = "${JAVA_HOME}"
+          export/android/android_sdk_path = "${SDK}"
+          export/android/debug_keystore = "${HOME}/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+
+      - name: Export Android debug APK
+        run: |
+          set -euo pipefail
+          APK="${GITHUB_WORKSPACE}/${APK_RELATIVE}"
+          mkdir -p "$(dirname "${APK}")"
+          "${GODOT_BIN}" --headless --path "${GITHUB_WORKSPACE}/animal_mayhem_2" \
+            --export-debug "${GODOT_PRESET}" "${APK}"
+
+      - name: Verify APK exists and package identity
+        run: |
+          set -euo pipefail
+          APK="${GITHUB_WORKSPACE}/${APK_RELATIVE}"
+          test -f "${APK}"
+          ls -lh "${APK}"
+          test -s "${APK}"
+          AAPT="${ANDROID_HOME}/build-tools/${ANDROID_BUILD_TOOLS}/aapt"
+          BADGING="$("${AAPT}" dump badging "${APK}")"
+          echo "${BADGING}"
+          echo "${BADGING}" | grep -E "package: name='${GODOT_PACKAGE}'"
+          echo "${BADGING}" | grep -E "application-label:'Animal Mayhem 2.0'"
+
+      - name: Stage APK artifact
+        run: |
+          set -euo pipefail
+          APK="${GITHUB_WORKSPACE}/${APK_RELATIVE}"
+          mkdir -p "${GITHUB_WORKSPACE}/godot-apk-artifact"
+          cp "${APK}" "${GITHUB_WORKSPACE}/godot-apk-artifact/animal-mayhem-2-debug.apk"
+          {
+            echo "commit: ${GITHUB_SHA}"
+            echo "ref: ${GITHUB_REF}"
+            echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "godot: ${GODOT_VERSION_FULL}"
+            echo "export_templates: ${GODOT_TEMPLATE_DIR_NAME}"
+            echo "java: $(java -version 2>&1 | head -n 1)"
+            echo "JAVA_HOME: ${JAVA_HOME}"
+            echo "ANDROID_HOME: ${ANDROID_HOME}"
+            echo "platforms: android-${ANDROID_API}"
+            echo "build-tools: ${ANDROID_BUILD_TOOLS}"
+            echo "cmdline-tools: ${ANDROID_CMDLINE_TOOLS_VERSION}"
+            echo "preset: ${GODOT_PRESET}"
+            echo "package: ${GODOT_PACKAGE}"
+            echo "apk: ${APK_RELATIVE}"
+            echo
+            "${ANDROID_HOME}/build-tools/${ANDROID_BUILD_TOOLS}/aapt" dump badging "${APK}" \
+              | grep -E '^(package:|application-label:|sdkVersion:|targetSdkVersion:|native-code:)'
+          } > "${GITHUB_WORKSPACE}/godot-apk-artifact/build-info.txt"
+
+      - name: Upload Godot debug APK
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: animal-mayhem-2-godot-debug-apk
+          path: godot-apk-artifact/
+          if-no-files-found: error
+          retention-days: 14
