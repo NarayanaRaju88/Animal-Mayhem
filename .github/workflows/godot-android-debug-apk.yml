@@ -4,7 +4,9 @@ name: Godot Android debug APK
 
 on:
   push:
-    branches: [visual/commercial-quality-game-foundation]
+    branches:
+      - visual/commercial-quality-game-foundation
+      - test/phase7-android-validation
   workflow_dispatch:
 
 permissions:
