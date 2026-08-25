@@ -31,6 +31,8 @@ func _ready() -> void:
 	print("ANIMAL_MAYHEM_2_WORLD_READY animals=", animals.size())
 	if OS.get_environment("AM2_SCREENSHOT") != "":
 		call_deferred("_capture_screenshot")
+	if OS.get_environment("AM2_PHASE7_CHECK") != "":
+		call_deferred("_phase7_contract_check")
 
 
 func _spawn_animals() -> void:
@@ -127,7 +129,7 @@ func _switch(index: int, instant := false) -> void:
 	camera.distance = a.definition.camera_distance
 	camera.height = a.definition.camera_height
 	if instant:
-		var look_height := a.definition.camera_height * 0.52
+		var look_height := a.definition.camera_height * 0.38
 		camera.global_position = a.global_position + Vector3(0, look_height, 0) + Vector3(
 			sin(camera.yaw) * camera.distance,
 			a.definition.camera_height,
@@ -178,6 +180,7 @@ func _capture_screenshot() -> void:
 	var path := OS.get_environment("AM2_SCREENSHOT")
 	img.save_png(path)
 	print("ANIMAL_MAYHEM_2_SCREENSHOT ", path)
+	get_tree().quit(0)
 
 
 func _apply_validation_shot(shot: String) -> void:
@@ -223,7 +226,7 @@ func _apply_validation_shot(shot: String) -> void:
 	a.rotation.y = 1.2
 	_validation_lock_follow = false
 	camera.yaw = 2.55
-	camera.pitch = -0.22
+	camera.pitch = -0.06
 	if shot == "F":
 		_validation_lock_follow = true
 		camera.distance = 3.6
@@ -261,3 +264,119 @@ func _validation_goto_explorer() -> void:
 		cos(camera.yaw) * camera.distance
 	)
 	print("ANIMAL_MAYHEM_2_VALIDATION_EXPLORER")
+
+
+func _phase7_contract_check() -> void:
+	## Env-gated contract check. Does not change mission flow for players.
+	if animals.size() != 3 or hud == null or camera == null:
+		push_error("PHASE7_FAIL world/hud/camera")
+		get_tree().quit(1)
+		return
+	print("PHASE7_HUD_OK")
+	var snake := animals[2]
+	var col: CollisionShape3D = null
+	for c in snake.get_children():
+		if c is CollisionShape3D:
+			col = c
+			break
+	if col == null:
+		push_error("PHASE7_FAIL snake collision missing")
+		get_tree().quit(1)
+		return
+	var cap := col.shape as CapsuleShape3D
+	if cap == null:
+		push_error("PHASE7_FAIL snake shape")
+		get_tree().quit(1)
+		return
+	print("PHASE7_SNAKE_DEF radius=", snake.definition.collision_radius, " height=", snake.definition.collision_height)
+	print("PHASE7_SNAKE_SHAPE radius=", cap.radius, " height=", cap.height)
+	if not is_equal_approx(snake.definition.collision_radius, 0.3) or not is_equal_approx(snake.definition.collision_height, 0.48):
+		push_error("PHASE7_FAIL snake catalog capsule")
+		get_tree().quit(1)
+		return
+	_switch(0)
+	print("PHASE7_SWITCH buffalo")
+	_switch(1)
+	print("PHASE7_SWITCH monkey")
+	_switch(2)
+	print("PHASE7_SWITCH snake")
+	await _phase7_teleport_and_act(0, Vector2(10.8, 0.0))
+	await get_tree().create_timer(1.4).timeout
+	if not GameState.tree_cleared:
+		push_error("PHASE7_FAIL PUSH")
+		get_tree().quit(1)
+		return
+	print("PHASE7_PUSH_OK")
+	await _phase7_teleport_and_act(1, Vector2(24.5, 9.9))
+	await get_tree().create_timer(1.5).timeout
+	if not GameState.climb_done:
+		push_error("PHASE7_FAIL CLIMB")
+		get_tree().quit(1)
+		return
+	print("PHASE7_CLIMB_OK")
+	await _phase7_teleport_and_act(2, Vector2(35.2, -8.5))
+	await get_tree().create_timer(1.0).timeout
+	if not GameState.coil_done:
+		push_error("PHASE7_FAIL COIL")
+		get_tree().quit(1)
+		return
+	print("PHASE7_COIL_OK")
+	var a := animals[active_index]
+	var xz := Vector2(44.5, 0.0)
+	a.global_position = Vector3(xz.x, builder.height_at(xz.x, xz.y) + 0.25, xz.y)
+	a.velocity = Vector3.ZERO
+	await get_tree().create_timer(0.6).timeout
+	if GameState.step != GameState.Step.DONE:
+		push_error("PHASE7_FAIL completion")
+		get_tree().quit(1)
+		return
+	print("PHASE7_COMPLETE_OK")
+	hud._on_pause()
+	if not get_tree().paused:
+		push_error("PHASE7_FAIL pause")
+		get_tree().quit(1)
+		return
+	print("PHASE7_PAUSE_OK")
+	hud._on_pause()
+	if get_tree().paused:
+		push_error("PHASE7_FAIL resume")
+		get_tree().quit(1)
+		return
+	print("PHASE7_RESUME_OK")
+	print("PHASE7_ALL_OK")
+	get_tree().quit(0)
+
+
+func _phase7_teleport_and_act(idx: int, xz: Vector2) -> void:
+	_switch(idx, true)
+	var a := animals[idx]
+	a.global_position = Vector3(xz.x, builder.height_at(xz.x, xz.y) + 0.25, xz.y)
+	a.velocity = Vector3.ZERO
+	probe.monitoring = true
+	probe.global_position = a.global_position + Vector3(0, 0.6, 0)
+	for _i in 30:
+		await get_tree().physics_frame
+	probe.global_position = a.global_position + Vector3(0, 0.6, 0)
+	probe.scan(a)
+	print("PHASE7_PROBE ability=", probe.current_ability, " current=", probe.current)
+	if probe.current == null:
+		var target := _phase7_find_target(idx)
+		if target:
+			print("PHASE7_PROBE_FALLBACK ", target)
+			for ability in a.abilities:
+				if ability.execute(a, target):
+					break
+	else:
+		try_action()
+	await get_tree().process_frame
+
+
+func _phase7_find_target(idx: int) -> Node3D:
+	for n in builder.get_children():
+		if idx == 0 and n is FallenTree:
+			return n
+		if idx == 1 and n is ClimbLedge:
+			return n
+		if idx == 2 and n is CoilPost:
+			return n
+	return null

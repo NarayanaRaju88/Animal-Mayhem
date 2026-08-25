@@ -75,8 +75,8 @@ static func _ground_contact(parent: Node3D, radius: float, along_z := 1.0) -> vo
 
 static func _buffalo(p: Node3D) -> void:
 	p.scale = Vector3(1.04, 1.04, 1.04)
-	var hide := MaterialLibrary.animal("buffalo_hide.png", Color(0.96, 0.93, 0.88), 0.94, 0.035, 0.72)
-	var dark := MaterialLibrary.animal("buffalo_hide.png", Color(0.5, 0.42, 0.33), 0.95, 0.03, 0.78)
+	var hide := MaterialLibrary.animal("buffalo_hide.png", Color(0.84, 0.76, 0.62), 0.94, 0.08, 0.72)
+	var dark := MaterialLibrary.animal("buffalo_hide.png", Color(0.38, 0.28, 0.18), 0.95, 0.07, 0.78)
 	var horn := _color_mat(Color(0.46, 0.38, 0.28), 0.62)
 	var keratin := _color_mat(Color(0.16, 0.11, 0.08), 0.78)
 	var eye_w := _color_mat(Color(0.78, 0.74, 0.64), 0.46)
@@ -157,7 +157,7 @@ static func _buffalo(p: Node3D) -> void:
 
 static func _monkey(p: Node3D) -> void:
 	p.scale = Vector3(1.12, 1.12, 1.12)
-	var fur := MaterialLibrary.animal("monkey_fur.png", Color(0.92, 0.86, 0.78), 0.93, 0.04, 0.68)
+	var fur := MaterialLibrary.animal("monkey_fur.png", Color(0.82, 0.66, 0.48), 0.93, 0.09, 0.68)
 	var skin := _color_mat(Color(0.7, 0.5, 0.4), 0.82)
 	var dark := _color_mat(Color(0.08, 0.06, 0.04), 0.4)
 	_ground_contact(p, 0.28, 0.85)
@@ -230,8 +230,8 @@ static func _monkey(p: Node3D) -> void:
 
 static func _snake(p: Node3D) -> void:
 	p.scale = Vector3(1.1, 1.1, 1.1)
-	var scales := MaterialLibrary.animal("snake_scales.png", Color(0.72, 0.82, 0.58), 0.7, 0.05, 0.85)
-	var belly := MaterialLibrary.animal("snake_scales.png", Color(0.78, 0.7, 0.48), 0.74, 0.03, 0.6)
+	var scales := MaterialLibrary.animal("snake_scales.png", Color(0.58, 0.46, 0.18), 0.68, 0.14, 0.85)
+	var belly := MaterialLibrary.animal("snake_scales.png", Color(0.86, 0.72, 0.42), 0.74, 0.06, 0.6)
 	_ground_contact(p, 0.22, 3.4)
 	var segs := Node3D.new()
 	segs.name = "Segments"
@@ -249,10 +249,10 @@ static func _snake(p: Node3D) -> void:
 	_mesh(head, _loft(PackedVector3Array([
 		Vector3(0, 0.01, -0.14), Vector3(0, 0.02, -0.02), Vector3(0, 0.01, 0.1), Vector3(0, -0.02, 0.2),
 		Vector3(0, -0.04, 0.28)
-	]), PackedFloat32Array([0.12, 0.13, 0.11, 0.07, 0.04]), 12, 1.18, 0.68), scales, Vector3.ZERO)
+	]), PackedFloat32Array([0.145, 0.16, 0.135, 0.085, 0.048]), 12, 1.22, 0.72), scales, Vector3.ZERO)
 	_mesh(head, _loft(PackedVector3Array([
 		Vector3(0, -0.03, 0.04), Vector3(0, -0.05, 0.16), Vector3(0, -0.045, 0.26)
-	]), PackedFloat32Array([0.08, 0.055, 0.028]), 10, 1.22, 0.48), belly, Vector3.ZERO)
+	]), PackedFloat32Array([0.095, 0.065, 0.034]), 10, 1.22, 0.48), belly, Vector3.ZERO)
 	var gold := _color_mat(Color(0.5, 0.42, 0.12), 0.45)
 	_mesh(head, _loft(PackedVector3Array([
 		Vector3(-0.075, 0.04, 0.08), Vector3(-0.075, 0.04, 0.13)

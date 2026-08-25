@@ -52,13 +52,13 @@ func _init_jungle_shared() -> void:
 	if _canopy_mesh != null:
 		return
 	_canopy_mesh = CapsuleMesh.new()
-	_canopy_mesh.radius = 0.72
-	_canopy_mesh.height = 1.85
+	_canopy_mesh.radius = 0.82
+	_canopy_mesh.height = 1.68
 	_canopy_mesh.radial_segments = 7
 	_canopy_mesh.rings = 4
 	_bush_mesh = CapsuleMesh.new()
-	_bush_mesh.radius = 0.42
-	_bush_mesh.height = 0.95
+	_bush_mesh.radius = 0.46
+	_bush_mesh.height = 0.96
 	_bush_mesh.radial_segments = 6
 	_bush_mesh.rings = 3
 	_branch_mesh = CylinderMesh.new()
@@ -80,11 +80,11 @@ func _init_jungle_shared() -> void:
 	_bark_pool.append(_make_bark("bark_willow", Color(0.78, 0.7, 0.62), 2.1))
 	_bark_pool.append(_make_bark("bark_brown_01", Color(0.88, 0.82, 0.74), 1.5))
 	_bark_pool.append(_make_bark("bark_brown_01", Color(0.7, 0.62, 0.52), 2.3))
-	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.58, 0.68, 0.42), 1.1))
-	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.42, 0.54, 0.3), 0.85))
-	_leaf_pool.append(_make_leaf("leafy_grass", Color(0.5, 0.62, 0.36), 1.35))
-	_leaf_pool.append(_make_leaf("leafy_grass", Color(0.34, 0.46, 0.24), 1.0))
-	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.62, 0.7, 0.4), 1.55))
+	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.48, 0.62, 0.34), 1.1))
+	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.34, 0.50, 0.26), 0.85))
+	_leaf_pool.append(_make_leaf("leafy_grass", Color(0.42, 0.58, 0.30), 1.35))
+	_leaf_pool.append(_make_leaf("leafy_grass", Color(0.28, 0.44, 0.20), 1.0))
+	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.52, 0.64, 0.32), 1.55))
 	_rock_box = BoxMesh.new()
 	_rock_box.size = Vector3.ONE
 	var moss := MaterialLibrary.pbr("mossy_rock", 1.0)
@@ -96,7 +96,7 @@ func _init_jungle_shared() -> void:
 	aerial.roughness = 0.88
 	_rock_pool.append(aerial)
 	_litter_mat = MaterialLibrary.pbr("forest_leaves_03", 2.0)
-	_litter_mat.albedo_color = Color(0.55, 0.48, 0.28)
+	_litter_mat.albedo_color = Color(0.42, 0.46, 0.24)
 	_litter_mat.roughness = 0.96
 	_litter_mat.metallic = 0.0
 	_litter_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
@@ -159,33 +159,33 @@ func _environment() -> void:
 	var sky := Sky.new()
 	var pano := PanoramaSkyMaterial.new()
 	pano.panorama = load("res://assets/environment/hdris/rainforest_trail_1k.hdr")
-	pano.energy_multiplier = 0.54
+	pano.energy_multiplier = 0.50
 	sky.sky_material = pano
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_energy = 0.40
-	e.ambient_light_sky_contribution = 0.72
+	e.ambient_light_energy = 0.36
+	e.ambient_light_sky_contribution = 0.68
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	e.tonemap_exposure = 0.78
 	e.adjustment_enabled = true
-	e.adjustment_saturation = 0.93
+	e.adjustment_saturation = 0.96
 	e.fog_enabled = true
-	e.fog_light_color = Color(0.50, 0.58, 0.45)
-	e.fog_density = 0.0085
-	e.fog_aerial_perspective = 0.58
-	e.fog_sky_affect = 0.24
-	e.fog_sun_scatter = 0.10
+	e.fog_light_color = Color(0.48, 0.56, 0.42)
+	e.fog_density = 0.011
+	e.fog_aerial_perspective = 0.64
+	e.fog_sky_affect = 0.28
+	e.fog_sun_scatter = 0.08
 	e.glow_enabled = true
-	e.glow_intensity = 0.028
-	e.glow_bloom = 0.005
+	e.glow_intensity = 0.018
+	e.glow_bloom = 0.004
 	env.environment = e
 	add_child(env)
 
 
 func _sun() -> void:
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-50, 32, 0)
-	sun.light_energy = 0.86
+	sun.rotation_degrees = Vector3(-46, 32, 0)
+	sun.light_energy = 0.80
 	sun.light_color = Color(1.0, 0.91, 0.74)
 	sun.light_angular_distance = 1.05
 	sun.shadow_enabled = true
@@ -195,8 +195,8 @@ func _sun() -> void:
 	add_child(sun)
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-18, -138, 0)
-	fill.light_energy = 0.13
-	fill.light_color = Color(0.42, 0.55, 0.52)
+	fill.light_energy = 0.18
+	fill.light_color = Color(0.40, 0.54, 0.50)
 	fill.shadow_enabled = false
 	add_child(fill)
 
@@ -365,7 +365,7 @@ func _vegetation() -> void:
 		_tree(Vector3(x, height_at(x, z), z), vis)
 	var rock_rng := RandomNumberGenerator.new()
 	rock_rng.seed = 31
-	for i in range(30):
+	for i in range(36):
 		var x := rock_rng.randf_range(-36, 42)
 		var z := rock_rng.randf_range(-36, 36)
 		if abs(z) < 2.5 and x > -4 and x < 46:
@@ -438,23 +438,23 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 		var smi := MeshInstance3D.new()
 		smi.mesh = _canopy_mesh
 		smi.material_override = leaf if k % 3 != 2 else _leaf_mat(rng)
-		var ang := TAU * float(k) / float(clumps) + rng.randf_range(-0.4, 0.4)
-		var rad := rng.randf_range(0.12, 0.95)
-		var layer := 0.0 if k < 3 else rng.randf_range(0.35, 0.95)
+		var ang := TAU * float(k) / float(clumps) + rng.randf_range(-0.35, 0.35)
+		var rad := rng.randf_range(0.04, 0.52)
+		var layer := 0.0 if k < 3 else rng.randf_range(0.12, 0.55)
 		smi.position = Vector3(
 			cos(ang) * rad,
-			canopy_base + rng.randf_range(-0.65, 0.55) + layer,
-			sin(ang) * rad * rng.randf_range(0.75, 1.2)
+			canopy_base + rng.randf_range(-0.28, 0.32) + layer,
+			sin(ang) * rad * rng.randf_range(0.72, 1.15)
 		)
 		smi.rotation_degrees = Vector3(
-			rng.randf_range(48, 118),
+			rng.randf_range(-16, 22),
 			rng.randf() * 360.0,
-			rng.randf_range(-36, 36)
+			rng.randf_range(-18, 18)
 		)
 		smi.scale = Vector3(
-			rng.randf_range(0.78, 1.42),
-			rng.randf_range(0.62, 1.18),
-			rng.randf_range(0.72, 1.38)
+			rng.randf_range(1.35, 2.15),
+			rng.randf_range(0.28, 0.52),
+			rng.randf_range(1.25, 2.05)
 		)
 		smi.cast_shadow = (
 			GeometryInstance3D.SHADOW_CASTING_SETTING_ON
@@ -503,9 +503,9 @@ func _rock(pos: Vector3, rng: RandomNumberGenerator, scale_mul: float = 1.0) -> 
 		mi.mesh = _rock_box
 		mi.material_override = mat
 		mi.scale = Vector3(
-			rng.randf_range(0.42, 1.15) * scale_mul,
-			rng.randf_range(0.22, 0.48) * scale_mul,
-			rng.randf_range(0.38, 1.05) * scale_mul
+			rng.randf_range(0.38, 1.35) * scale_mul,
+			rng.randf_range(0.18, 0.58) * scale_mul,
+			rng.randf_range(0.34, 1.22) * scale_mul
 		)
 		mi.position = Vector3(
 			rng.randf_range(-0.28, 0.28) * scale_mul,
@@ -541,7 +541,7 @@ func _grass_tuft_mesh() -> ArrayMesh:
 func _grass_field() -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.instance_count = 380
+	mm.instance_count = 450
 	var tuft := _grass_tuft_mesh()
 	var gmat := _leaf_pool[2]
 	gmat.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -563,7 +563,7 @@ func _grass_field() -> void:
 			continue
 		var xf := Transform3D.IDENTITY
 		xf.basis = Basis.from_euler(Vector3(0.0, rng.randf() * TAU, 0.0)).scaled(
-			Vector3(rng.randf_range(0.7, 1.45), rng.randf_range(0.65, 1.35), rng.randf_range(0.7, 1.45))
+			Vector3(rng.randf_range(0.85, 1.75), rng.randf_range(0.72, 1.55), rng.randf_range(0.85, 1.75))
 		)
 		xf.origin = Vector3(x, height_at(x, z), z)
 		mm.set_instance_transform(placed, xf)
@@ -577,7 +577,7 @@ func _grass_field() -> void:
 func _path_edge_grass(tuft: ArrayMesh, gmat: Material) -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.instance_count = 88
+	mm.instance_count = 108
 	mm.mesh = tuft
 	var mi := MultiMeshInstance3D.new()
 	mi.multimesh = mm
@@ -588,7 +588,7 @@ func _path_edge_grass(tuft: ArrayMesh, gmat: Material) -> void:
 	rng.seed = 19
 	var placed := 0
 	var attempts := 0
-	while placed < mm.instance_count and attempts < 400:
+	while placed < mm.instance_count and attempts < 480:
 		attempts += 1
 		var x := rng.randf_range(-3.5, 45.5)
 		var z := (1.0 if placed % 2 == 0 else -1.0) * rng.randf_range(2.55, 4.35)
@@ -596,7 +596,7 @@ func _path_edge_grass(tuft: ArrayMesh, gmat: Material) -> void:
 			continue
 		var xf := Transform3D.IDENTITY
 		xf.basis = Basis.from_euler(Vector3(0.0, rng.randf() * TAU, 0.0)).scaled(
-			Vector3(rng.randf_range(0.85, 1.55), rng.randf_range(0.9, 1.55), rng.randf_range(0.85, 1.55))
+			Vector3(rng.randf_range(0.95, 1.75), rng.randf_range(1.0, 1.72), rng.randf_range(0.95, 1.75))
 		)
 		xf.origin = Vector3(x, height_at(x, z), z)
 		mm.set_instance_transform(placed, xf)
@@ -608,11 +608,11 @@ func _path_edge_grass(tuft: ArrayMesh, gmat: Material) -> void:
 func _leaf_litter() -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.instance_count = 140
+	mm.instance_count = 170
 	var disc := CylinderMesh.new()
-	disc.top_radius = 0.22
-	disc.bottom_radius = 0.22
-	disc.height = 0.028
+	disc.top_radius = 0.28
+	disc.bottom_radius = 0.24
+	disc.height = 0.032
 	disc.radial_segments = 8
 	var mat := _litter_mat
 	var mi := MultiMeshInstance3D.new()
@@ -625,7 +625,7 @@ func _leaf_litter() -> void:
 	rng.seed = 21
 	var placed := 0
 	var attempts := 0
-	while placed < mm.instance_count and attempts < 480:
+	while placed < mm.instance_count and attempts < 560:
 		attempts += 1
 		var x := rng.randf_range(-28, 40)
 		var z := rng.randf_range(-28, 28)
@@ -637,9 +637,9 @@ func _leaf_litter() -> void:
 		xf.basis = Basis.from_euler(
 			Vector3(rng.randf_range(-0.08, 0.08), rng.randf() * TAU, rng.randf_range(-0.08, 0.08))
 		).scaled(Vector3(
-			rng.randf_range(0.45, 2.05),
+			rng.randf_range(0.7, 2.55),
 			1.0,
-			rng.randf_range(0.45, 2.05)
+			rng.randf_range(0.55, 2.35)
 		))
 		xf.origin = Vector3(x, height_at(x, z) + 0.02, z)
 		mm.set_instance_transform(placed, xf)
@@ -651,7 +651,7 @@ func _leaf_litter() -> void:
 func _bushes() -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.instance_count = 72
+	mm.instance_count = 88
 	mm.mesh = _bush_mesh
 	var mi := MultiMeshInstance3D.new()
 	mi.multimesh = mm
@@ -662,7 +662,7 @@ func _bushes() -> void:
 	rng.seed = 41
 	var placed := 0
 	var attempts := 0
-	while placed < mm.instance_count and attempts < 360:
+	while placed < mm.instance_count and attempts < 420:
 		attempts += 1
 		var x := rng.randf_range(-32, 38)
 		var z := rng.randf_range(-32, 30)
@@ -674,9 +674,9 @@ func _bushes() -> void:
 			rng.randf() * TAU,
 			rng.randf_range(-0.2, 0.2)
 		)).scaled(Vector3(
-			rng.randf_range(0.7, 1.45),
-			rng.randf_range(0.45, 0.95),
-			rng.randf_range(0.7, 1.4)
+			rng.randf_range(0.95, 1.75),
+			rng.randf_range(0.28, 0.62),
+			rng.randf_range(0.9, 1.7)
 		))
 		xf.origin = Vector3(x, height_at(x, z) + 0.12, z)
 		mm.set_instance_transform(placed, xf)
@@ -707,7 +707,7 @@ func _fallen_branches() -> void:
 func _tree_base_undergrowth() -> void:
 	if _tree_xz.is_empty():
 		return
-	var count := mini(_tree_xz.size() * 3, 140)
+	var count := mini(_tree_xz.size() * 4, 165)
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.instance_count = count
@@ -723,7 +723,7 @@ func _tree_base_undergrowth() -> void:
 	for p in _tree_xz:
 		if placed >= count:
 			break
-		for k in 3:
+		for k in 4:
 			if placed >= count:
 				break
 			var ang := rng.randf() * TAU
@@ -738,9 +738,9 @@ func _tree_base_undergrowth() -> void:
 				rng.randf() * TAU,
 				rng.randf_range(-0.18, 0.18)
 			)).scaled(Vector3(
-				rng.randf_range(0.5, 1.05),
-				rng.randf_range(0.32, 0.72),
-				rng.randf_range(0.5, 1.05)
+				rng.randf_range(0.65, 1.35),
+				rng.randf_range(0.22, 0.52),
+				rng.randf_range(0.65, 1.35)
 			))
 			xf.origin = Vector3(x, height_at(x, z) + 0.08, z)
 			mm.set_instance_transform(placed, xf)
@@ -775,9 +775,9 @@ func _path_frame_canopy() -> void:
 			rng.randf() * TAU,
 			rng.randf_range(-0.3, 0.3)
 		)).scaled(Vector3(
-			rng.randf_range(1.35, 2.15),
-			rng.randf_range(0.85, 1.55),
-			rng.randf_range(1.25, 2.05)
+			rng.randf_range(1.75, 2.75),
+			rng.randf_range(0.34, 0.62),
+			rng.randf_range(1.6, 2.55)
 		))
 		xf.origin = Vector3(x, height_at(x, z) + rng.randf_range(3.8, 6.8), z)
 		mm.set_instance_transform(placed, xf)
@@ -814,14 +814,14 @@ func _landmark() -> void:
 			-10.0 + sin(ang) * rad * 0.85
 		)
 		canopy.rotation_degrees = Vector3(
-			kapok_rng.randf_range(18, 72),
+			kapok_rng.randf_range(-12, 18),
 			kapok_rng.randf() * 360.0,
-			kapok_rng.randf_range(-28, 28)
+			kapok_rng.randf_range(-16, 16)
 		)
 		canopy.scale = Vector3(
-			kapok_rng.randf_range(3.2, 4.4),
-			kapok_rng.randf_range(1.8, 2.8),
-			kapok_rng.randf_range(3.0, 4.2)
+			kapok_rng.randf_range(4.0, 5.4),
+			kapok_rng.randf_range(0.55, 0.95),
+			kapok_rng.randf_range(3.6, 5.1)
 		)
 		canopy.cast_shadow = (
 			GeometryInstance3D.SHADOW_CASTING_SETTING_ON
@@ -973,9 +973,9 @@ func _horizon() -> void:
 			rng.randf() * TAU,
 			rng.randf_range(-0.28, 0.28)
 		)).scaled(Vector3(
-			rng.randf_range(2.1, 3.6) if far else rng.randf_range(1.5, 2.6),
-			rng.randf_range(1.35, 2.4) if far else rng.randf_range(1.1, 1.9),
-			rng.randf_range(2.0, 3.4) if far else rng.randf_range(1.45, 2.5)
+			rng.randf_range(3.0, 4.8) if far else rng.randf_range(2.1, 3.4),
+			rng.randf_range(0.48, 0.88) if far else rng.randf_range(0.38, 0.72),
+			rng.randf_range(2.8, 4.6) if far else rng.randf_range(2.0, 3.2)
 		))
 		var y := (5.2 + rng.randf_range(0.0, 4.8)) if far else (3.4 + rng.randf_range(0.0, 3.6))
 		xf.origin = Vector3(px, y, pz)
