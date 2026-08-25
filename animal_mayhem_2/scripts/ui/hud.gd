@@ -5,13 +5,13 @@ signal action_pressed
 signal animal_selected(index: int)
 signal look_moved(relative: Vector2)
 
-const _INK := Color(0.94, 0.91, 0.82, 0.96)
-const _INK_DIM := Color(0.78, 0.74, 0.58, 0.88)
-const _INK_MUTED := Color(0.70, 0.72, 0.64, 0.88)
-const _PANEL := Color(0.07, 0.10, 0.08, 0.78)
-const _PANEL_SOFT := Color(0.08, 0.11, 0.09, 0.62)
-const _LINE := Color(0.78, 0.70, 0.42, 0.42)
-const _GOLD := Color(0.90, 0.80, 0.48, 0.92)
+const _INK := Color(0.96, 0.93, 0.84, 0.98)
+const _INK_DIM := Color(0.86, 0.80, 0.58, 0.94)
+const _INK_MUTED := Color(0.78, 0.80, 0.70, 0.92)
+const _PANEL := Color(0.05, 0.08, 0.06, 0.88)
+const _PANEL_SOFT := Color(0.07, 0.10, 0.08, 0.86)
+const _LINE := Color(0.92, 0.80, 0.42, 0.72)
+const _GOLD := Color(0.96, 0.84, 0.42, 0.98)
 const _ANIMAL_NAMES := ["Buffalo", "Monkey", "Snake"]
 const _ANIMAL_ACCENT := [
 	Color(0.76, 0.62, 0.34, 0.95),
@@ -21,6 +21,7 @@ const _ANIMAL_ACCENT := [
 
 var joystick_active := false
 var _intro_t := 0.0
+var _notice_t := 0.0
 
 @onready var objective: Label = $Root/ObjectiveCard/VBox/Objective
 @onready var animal_name: Label = $Root/AnimalName
@@ -65,67 +66,96 @@ func _process(delta: float) -> void:
 				hint.modulate.a = maxf(0.0, hint.modulate.a - delta * 0.5)
 				if hint.modulate.a <= 0.02:
 					hint.visible = false
+	if action_btn.visible:
+		keep_ticking = true
+		_pulse_action()
+	else:
+		action_btn.scale = Vector2.ONE
+		action_btn.modulate = Color.WHITE
+	if has_node("Root/Notice") and $Root/Notice.visible:
+		keep_ticking = true
+		_notice_t -= delta
+		if _notice_t <= 0.0:
+			$Root/Notice.visible = false
+		else:
+			$Root/Notice.modulate.a = clampf(_notice_t / 0.45, 0.0, 1.0) if _notice_t < 0.45 else 1.0
 	if not keep_ticking:
 		set_process(false)
 
 
+func _pulse_action() -> void:
+	if action_btn.size.x > 1.0:
+		action_btn.pivot_offset = action_btn.size * 0.5
+	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.007)
+	action_btn.modulate = Color(1.0, 0.92 + 0.08 * pulse, 0.72 + 0.28 * pulse, 1.0)
+	var s := 1.0 + 0.07 * pulse
+	action_btn.scale = Vector2(s, s)
+
+
 func _style_controls() -> void:
-	var panel := _flat(_PANEL, _LINE, 1, 12, 12)
-	panel.content_margin_top = 10
-	panel.content_margin_bottom = 10
-	panel.border_width_left = 3
-	panel.border_color = Color(0.82, 0.72, 0.40, 0.70)
-	panel.shadow_size = 4
-	panel.shadow_offset = Vector2(0, 1)
-	panel.shadow_color = Color(0.02, 0.03, 0.02, 0.30)
+	var panel := _flat(_PANEL, _LINE, 2, 14, 14)
+	panel.content_margin_top = 12
+	panel.content_margin_bottom = 12
+	panel.border_width_left = 5
+	panel.border_color = Color(0.94, 0.80, 0.38, 0.88)
+	panel.shadow_size = 6
+	panel.shadow_offset = Vector2(0, 2)
+	panel.shadow_color = Color(0.02, 0.03, 0.02, 0.42)
 	if has_node("Root/ObjectiveCard"):
 		$Root/ObjectiveCard.add_theme_stylebox_override("panel", panel)
 		$Root/ObjectiveCard.modulate = Color(1, 1, 1, 1)
 	if has_node("Root/ObjectiveCard/VBox/MissionId"):
 		var mid: Label = $Root/ObjectiveCard/VBox/MissionId
 		mid.add_theme_color_override("font_color", _INK_DIM)
-		mid.add_theme_font_size_override("font_size", 12)
-		_outline(mid, 1)
+		mid.add_theme_font_size_override("font_size", 16)
+		_outline(mid, 2)
 	objective.add_theme_color_override("font_color", _INK)
-	objective.add_theme_font_size_override("font_size", 16)
-	_outline(objective, 1)
+	objective.add_theme_font_size_override("font_size", 24)
+	_outline(objective, 2)
 
 	animal_name.add_theme_color_override("font_color", _GOLD)
-	animal_name.add_theme_font_size_override("font_size", 14)
-	_outline(animal_name, 1)
-	var name_chip := _flat(Color(0.06, 0.09, 0.07, 0.55), Color(0.78, 0.70, 0.42, 0.28), 1, 8, 8)
+	animal_name.add_theme_font_size_override("font_size", 16)
+	_outline(animal_name, 2)
+	var name_chip := _flat(Color(0.05, 0.08, 0.06, 0.78), Color(0.90, 0.78, 0.40, 0.55), 1, 8, 8)
 	name_chip.content_margin_top = 4
 	name_chip.content_margin_bottom = 4
 	animal_name.add_theme_stylebox_override("normal", name_chip)
 
-	var ring := _flat(Color(0.08, 0.12, 0.09, 0.28), Color(0.82, 0.78, 0.58, 0.38), 2, 90, 0)
+	var ring := _flat(Color(0.08, 0.12, 0.09, 0.48), Color(0.92, 0.86, 0.55, 0.62), 3, 90, 0)
 	$Root/Joystick/Ring.add_theme_stylebox_override("panel", ring)
-	var knob := _flat(Color(0.90, 0.86, 0.68, 0.70), Color(0.96, 0.92, 0.78, 0.35), 1, 40, 0)
+	var knob := _flat(Color(0.94, 0.88, 0.62, 0.88), Color(0.98, 0.94, 0.78, 0.55), 2, 40, 0)
 	$Root/Joystick/Knob.add_theme_stylebox_override("panel", knob)
 
-	var act := _flat(Color(0.14, 0.18, 0.11, 0.82), _GOLD, 2, 56, 8)
-	var act_press := _flat(Color(0.20, 0.24, 0.14, 0.90), Color(0.96, 0.88, 0.55, 1.0), 2, 56, 8)
+	var act := _flat(Color(0.16, 0.20, 0.10, 0.92), _GOLD, 3, 60, 10)
+	var act_press := _flat(Color(0.24, 0.28, 0.12, 0.96), Color(1.0, 0.92, 0.50, 1.0), 3, 60, 10)
 	action_btn.add_theme_stylebox_override("normal", act)
 	action_btn.add_theme_stylebox_override("hover", act_press)
 	action_btn.add_theme_stylebox_override("pressed", act_press)
 	action_btn.add_theme_stylebox_override("focus", act)
 	action_btn.add_theme_color_override("font_color", _INK)
-	action_btn.add_theme_font_size_override("font_size", 15)
+	action_btn.add_theme_font_size_override("font_size", 22)
 
-	var pause := _flat(_PANEL_SOFT, _LINE, 1, 10, 8)
-	var pause_press := _flat(Color(0.12, 0.16, 0.12, 0.82), _GOLD, 1, 10, 8)
+	var pause := _flat(_PANEL_SOFT, _GOLD, 2, 12, 8)
+	var pause_press := _flat(Color(0.14, 0.18, 0.12, 0.94), Color(1.0, 0.90, 0.48, 1.0), 2, 12, 8)
 	$Root/Pause.add_theme_stylebox_override("normal", pause)
 	$Root/Pause.add_theme_stylebox_override("hover", pause_press)
 	$Root/Pause.add_theme_stylebox_override("pressed", pause_press)
 	$Root/Pause.add_theme_stylebox_override("focus", pause)
 	$Root/Pause.add_theme_color_override("font_color", _INK)
-	$Root/Pause.add_theme_font_size_override("font_size", 14)
+	$Root/Pause.add_theme_font_size_override("font_size", 22)
 
 	if has_node("Root/Intro"):
-		var intro_box := _flat(Color(0.05, 0.08, 0.06, 0.72), Color(0.78, 0.70, 0.42, 0.35), 1, 12, 12)
+		var intro_box := _flat(Color(0.05, 0.08, 0.06, 0.82), Color(0.90, 0.78, 0.40, 0.55), 2, 12, 12)
 		$Root/Intro.add_theme_stylebox_override("panel", intro_box)
 	if has_node("Root/LookHint"):
-		_outline($Root/LookHint, 1)
+		_outline($Root/LookHint, 2)
+		$Root/LookHint.add_theme_font_size_override("font_size", 15)
+		$Root/LookHint.add_theme_color_override("font_color", Color(0.90, 0.92, 0.82, 0.78))
+	if has_node("Root/Notice"):
+		var notice: Label = $Root/Notice
+		notice.add_theme_color_override("font_color", _INK)
+		notice.add_theme_font_size_override("font_size", 18)
+		_outline(notice, 2)
 
 	var complete := _flat(Color(0.08, 0.11, 0.08, 0.92), Color(0.80, 0.72, 0.42, 0.50), 1, 14, 22)
 	complete.shadow_size = 8
@@ -166,23 +196,23 @@ func _style_portraits(index: int) -> void:
 		var on := i == index
 		var accent: Color = _ANIMAL_ACCENT[i] if i < _ANIMAL_ACCENT.size() else _LINE
 		var box := _flat(
-			Color(0.16, 0.18, 0.11, 0.88) if on else Color(0.07, 0.09, 0.07, 0.58),
-			Color(0.92, 0.84, 0.50, 0.95) if on else Color(0.50, 0.54, 0.44, 0.40),
+			Color(0.16, 0.18, 0.11, 0.92) if on else Color(0.07, 0.09, 0.07, 0.78),
+			Color(0.96, 0.86, 0.46, 1.0) if on else Color(0.55, 0.58, 0.46, 0.55),
 			2 if on else 1,
 			10,
 			8
 		)
-		box.border_width_left = 5
+		box.border_width_left = 6
 		if not on:
 			box.border_color = accent
 		var hover := box.duplicate() as StyleBoxFlat
-		hover.bg_color = Color(0.18, 0.20, 0.13, 0.90) if on else Color(0.11, 0.13, 0.10, 0.70)
+		hover.bg_color = Color(0.20, 0.22, 0.14, 0.94) if on else Color(0.12, 0.14, 0.11, 0.86)
 		b.add_theme_stylebox_override("normal", box)
 		b.add_theme_stylebox_override("pressed", hover)
 		b.add_theme_stylebox_override("hover", hover)
 		b.add_theme_stylebox_override("focus", box)
-		b.add_theme_color_override("font_color", Color(0.96, 0.92, 0.80, 1.0) if on else _INK_MUTED)
-		b.add_theme_font_size_override("font_size", 14)
+		b.add_theme_color_override("font_color", Color(0.98, 0.94, 0.82, 1.0) if on else _INK_MUTED)
+		b.add_theme_font_size_override("font_size", 18)
 		b.scale = Vector2.ONE
 		var label: String = _ANIMAL_NAMES[i] if i < _ANIMAL_NAMES.size() else b.text
 		b.text = ("● " + label) if on else label
@@ -191,6 +221,22 @@ func _style_portraits(index: int) -> void:
 func set_action(show: bool, label: String) -> void:
 	action_btn.visible = show
 	action_btn.text = label
+	if show:
+		set_process(true)
+	else:
+		action_btn.scale = Vector2.ONE
+		action_btn.modulate = Color.WHITE
+
+
+func show_notice(text: String) -> void:
+	if not has_node("Root/Notice"):
+		return
+	var n: Label = $Root/Notice
+	n.text = text
+	n.visible = true
+	n.modulate.a = 1.0
+	_notice_t = 2.4
+	set_process(true)
 
 
 func show_complete() -> void:
@@ -202,10 +248,14 @@ func _on_pause() -> void:
 	var pause_btn: Button = $Root/Pause
 	if get_tree().paused:
 		pause_btn.text = "Resume"
-		pause_btn.offset_left = -116.0
+		pause_btn.custom_minimum_size = Vector2(132, 72)
+		pause_btn.offset_left = -160.0
+		pause_btn.offset_right = -28.0
 	else:
 		pause_btn.text = "II"
-		pause_btn.offset_left = -76.0
+		pause_btn.custom_minimum_size = Vector2(72, 72)
+		pause_btn.offset_left = -100.0
+		pause_btn.offset_right = -28.0
 
 
 func _on_continue() -> void:
@@ -257,4 +307,4 @@ func _flat(bg: Color, border: Color, bw: int, radius: int, pad: int) -> StyleBox
 
 func _outline(label: Label, size: int) -> void:
 	label.add_theme_constant_override("outline_size", size)
-	label.add_theme_color_override("font_outline_color", Color(0.04, 0.06, 0.04, 0.72))
+	label.add_theme_color_override("font_outline_color", Color(0.04, 0.06, 0.04, 0.82))
