@@ -6,14 +6,19 @@ on:
   push:
     branches:
       - visual/commercial-quality-game-foundation
-      - test/phase7-android-validation
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag, or commit SHA to checkout and export. Leave empty to use the branch selected in Run workflow."
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: godot-android-debug-apk-${{ github.ref }}
+  group: godot-android-debug-apk-${{ github.event.inputs.ref || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -40,8 +45,45 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - name: Checkout
+      - name: Resolve checkout ref
+        id: source
+        env:
+          DISPATCH_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ -n "${DISPATCH_REF}" ]; then
+            echo "ref=${DISPATCH_REF}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "ref=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+          fi
+          echo "Resolved checkout ref written to outputs"
+
+      - name: Checkout selected ref
         uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ steps.source.outputs.ref }}
+
+      - name: Record checkout identity
+        id: build
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse HEAD)"
+          SHORT="$(git rev-parse --short=7 HEAD)"
+          BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+          REQUESTED="${{ steps.source.outputs.ref }}"
+          if [ "${BRANCH}" = "HEAD" ]; then
+            BRANCH="${REQUESTED}"
+          fi
+          echo "sha=${SHA}" >> "${GITHUB_OUTPUT}"
+          echo "short_sha=${SHORT}" >> "${GITHUB_OUTPUT}"
+          echo "branch=${BRANCH}" >> "${GITHUB_OUTPUT}"
+          echo "requested_ref=${REQUESTED}" >> "${GITHUB_OUTPUT}"
+          echo "artifact_name=animal-mayhem-2-godot-debug-apk-${SHORT}" >> "${GITHUB_OUTPUT}"
+          echo "BUILD_SHA=${SHA}" >> "${GITHUB_ENV}"
+          echo "BUILD_SHORT_SHA=${SHORT}" >> "${GITHUB_ENV}"
+          echo "BUILD_BRANCH=${BRANCH}" >> "${GITHUB_ENV}"
+          echo "BUILD_REQUESTED_REF=${REQUESTED}" >> "${GITHUB_ENV}"
+          echo "Checked out commit ${SHA} (requested ${REQUESTED}, branch ${BRANCH})"
 
       - name: Confirm Godot project and existing Android preset
         run: |
@@ -53,6 +95,7 @@ jobs:
           grep -F 'name="Android"' animal_mayhem_2/export_presets.cfg
           grep -F 'package/unique_name="com.animalmayhem.adventure"' animal_mayhem_2/export_presets.cfg
           grep -F 'gradle_build/use_gradle_build=false' animal_mayhem_2/export_presets.cfg
+          grep -F 'architectures/arm64-v8a=true' animal_mayhem_2/export_presets.cfg
           grep -F 'export_path="export/animal-mayhem-2-debug.apk"' animal_mayhem_2/export_presets.cfg
           if [ -d animal_mayhem_2/android/build ]; then
             echo "Unexpected android/build Gradle project present; this workflow must not use Gradle export."
@@ -206,6 +249,18 @@ jobs:
           export/android/debug_keystore_pass = "android"
           EOF
 
+      - name: Delete any existing export APK
+        run: |
+          set -euo pipefail
+          mkdir -p animal_mayhem_2/export
+          rm -f "${GITHUB_WORKSPACE}/${APK_RELATIVE}"
+          if [ -e "${GITHUB_WORKSPACE}/${APK_RELATIVE}" ]; then
+            echo "Failed to delete existing APK"
+            exit 1
+          fi
+          echo "EXPORT_START_EPOCH=$(date +%s)" >> "${GITHUB_ENV}"
+          echo "EXPORT_START_UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${GITHUB_ENV}"
+
       - name: Export Android debug APK
         run: |
           set -euo pipefail
@@ -214,13 +269,21 @@ jobs:
           "${GODOT_BIN}" --headless --path "${GITHUB_WORKSPACE}/animal_mayhem_2" \
             --export-debug "${GODOT_PRESET}" "${APK}"
 
-      - name: Verify APK exists and package identity
+      - name: Verify freshly exported APK
         run: |
           set -euo pipefail
           APK="${GITHUB_WORKSPACE}/${APK_RELATIVE}"
           test -f "${APK}"
-          ls -lh "${APK}"
           test -s "${APK}"
+          APK_MTIME="$(stat -c %Y "${APK}")"
+          APK_SIZE="$(stat -c %s "${APK}")"
+          APK_STAMP="$(stat -c '%y' "${APK}")"
+          echo "APK path: ${APK}"
+          echo "APK size: ${APK_SIZE} bytes"
+          echo "APK mtime: ${APK_STAMP} (epoch ${APK_MTIME})"
+          echo "Export start epoch: ${EXPORT_START_EPOCH} (${EXPORT_START_UTC})"
+          test "${APK_MTIME}" -ge "${EXPORT_START_EPOCH}"
+          test "${APK_SIZE}" -gt 0
           APKANALYZER=""
           if [ -x "${ANDROID_HOME}/cmdline-tools/latest/bin/apkanalyzer" ]; then
             APKANALYZER="${ANDROID_HOME}/cmdline-tools/latest/bin/apkanalyzer"
@@ -233,47 +296,53 @@ jobs:
           test -x "${APKANALYZER}"
           echo "Using ${APKANALYZER}"
           PACKAGE_ID="$("${APKANALYZER}" manifest application-id "${APK}")"
+          VERSION_CODE="$("${APKANALYZER}" manifest version-code "${APK}")"
+          VERSION_NAME="$("${APKANALYZER}" manifest version-name "${APK}")"
           echo "application-id: ${PACKAGE_ID}"
+          echo "version-code: ${VERSION_CODE}"
+          echo "version-name: ${VERSION_NAME}"
           test "${PACKAGE_ID}" = "${GODOT_PACKAGE}"
+          "${APKANALYZER}" files list "${APK}" | tee "${RUNNER_TEMP}/apk-files.txt"
+          grep -E 'lib/arm64-v8a/' "${RUNNER_TEMP}/apk-files.txt"
+          echo "APK_PACKAGE=${PACKAGE_ID}" >> "${GITHUB_ENV}"
+          echo "APK_VERSION_CODE=${VERSION_CODE}" >> "${GITHUB_ENV}"
+          echo "APK_VERSION_NAME=${VERSION_NAME}" >> "${GITHUB_ENV}"
+          echo "APK_SIZE=${APK_SIZE}" >> "${GITHUB_ENV}"
+          echo "APK_MTIME=${APK_STAMP}" >> "${GITHUB_ENV}"
+          echo "APKANALYZER_BIN=${APKANALYZER}" >> "${GITHUB_ENV}"
 
       - name: Stage APK artifact
         run: |
           set -euo pipefail
           APK="${GITHUB_WORKSPACE}/${APK_RELATIVE}"
-          mkdir -p "${GITHUB_WORKSPACE}/godot-apk-artifact"
-          cp "${APK}" "${GITHUB_WORKSPACE}/godot-apk-artifact/animal-mayhem-2-debug.apk"
+          STAGE="${GITHUB_WORKSPACE}/godot-apk-artifact"
+          rm -rf "${STAGE}"
+          mkdir -p "${STAGE}"
+          cp "${APK}" "${STAGE}/animal-mayhem-2-debug.apk"
+          APK_SHA256="$(sha256sum "${APK}" | awk '{print $1}')"
           {
-            echo "commit: ${GITHUB_SHA}"
-            echo "ref: ${GITHUB_REF}"
-            echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "godot: ${GODOT_VERSION_FULL}"
-            echo "export_templates: ${GODOT_TEMPLATE_DIR_NAME}"
-            echo "java: $(java -version 2>&1 | head -n 1)"
-            echo "JAVA_HOME: ${JAVA_HOME}"
-            echo "ANDROID_HOME: ${ANDROID_HOME}"
-            echo "platforms: android-${ANDROID_API}"
-            echo "build-tools: ${ANDROID_BUILD_TOOLS}"
-            echo "cmdline-tools: ${ANDROID_CMDLINE_TOOLS_VERSION}"
-            echo "preset: ${GODOT_PRESET}"
-            echo "package: ${GODOT_PACKAGE}"
-            echo "apk: ${APK_RELATIVE}"
-            echo
-            APKANALYZER=""
-            if [ -x "${ANDROID_HOME}/cmdline-tools/latest/bin/apkanalyzer" ]; then
-              APKANALYZER="${ANDROID_HOME}/cmdline-tools/latest/bin/apkanalyzer"
-            elif command -v apkanalyzer >/dev/null 2>&1; then
-              APKANALYZER="$(command -v apkanalyzer)"
-            else
-              APKANALYZER="$(find "${ANDROID_HOME}/cmdline-tools" -name apkanalyzer -type f | sort | tail -n 1)"
-            fi
-            echo "apkanalyzer: ${APKANALYZER}"
-            echo "application-id: $("${APKANALYZER}" manifest application-id "${APK}")"
-          } > "${GITHUB_WORKSPACE}/godot-apk-artifact/build-info.txt"
+            echo "branch/ref: ${BUILD_BRANCH} (requested ${BUILD_REQUESTED_REF})"
+            echo "full commit SHA: ${BUILD_SHA}"
+            echo "Godot version: ${GODOT_VERSION_FULL}"
+            echo "package ID: ${APK_PACKAGE}"
+            echo "version code: ${APK_VERSION_CODE}"
+            echo "version name: ${APK_VERSION_NAME}"
+            echo "APK SHA256: ${APK_SHA256}"
+            echo "APK size bytes: ${APK_SIZE}"
+            echo "APK mtime: ${APK_MTIME}"
+            echo "export start UTC: ${EXPORT_START_UTC}"
+          } > "${STAGE}/build-info.txt"
+          test "$(find "${STAGE}" -type f | wc -l)" -eq 2
+          test -f "${STAGE}/animal-mayhem-2-debug.apk"
+          test -f "${STAGE}/build-info.txt"
+          cat "${STAGE}/build-info.txt"
 
       - name: Upload Godot debug APK
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: animal-mayhem-2-godot-debug-apk
-          path: godot-apk-artifact/
+          name: ${{ steps.build.outputs.artifact_name }}
+          path: |
+            godot-apk-artifact/animal-mayhem-2-debug.apk
+            godot-apk-artifact/build-info.txt
           if-no-files-found: error
           retention-days: 14
