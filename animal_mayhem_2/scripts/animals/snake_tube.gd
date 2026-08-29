@@ -56,10 +56,10 @@ static func rebuild(mi: MeshInstance3D, points: PackedVector3Array, mat: Materia
 static func _radius_x(t: float) -> float:
 	## Thick mid-body, distinct neck, aggressive tail taper — not a constant pipe.
 	if t < 0.10:
-		return lerpf(0.108, 0.198, t / 0.10)
+		return lerpf(0.128, 0.246, t / 0.10)
 	if t < 0.55:
-		return lerpf(0.198, 0.162, (t - 0.10) / 0.45)
-	return lerpf(0.162, 0.016, pow((t - 0.55) / 0.45, 1.25))
+		return lerpf(0.246, 0.204, (t - 0.10) / 0.45)
+	return lerpf(0.204, 0.018, pow((t - 0.55) / 0.45, 1.25))
 
 
 static func _quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, ua: Vector2, ub: Vector2, uc: Vector2, ud: Vector2) -> void:

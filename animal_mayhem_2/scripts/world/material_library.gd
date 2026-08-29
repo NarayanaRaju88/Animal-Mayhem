@@ -38,7 +38,7 @@ static func animal(
 		m.normal_scale = nrm_scale
 	m.rim_enabled = rim > 0.001
 	m.rim = rim
-	m.rim_tint = 0.18
+	m.rim_tint = 0.28
 	m.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
 	return m
 
@@ -78,13 +78,16 @@ void fragment() {
 	float camp = 1.0 - smoothstep(0.0, 6.5, length(world_pos.xz));
 	vec3 col = mix(g, p, path_w);
 	col = mix(col, m, clamp(river * 0.85 + camp * 0.35, 0.0, 1.0));
-	float litter_w = (1.0 - path_w) * (1.0 - camp) * (1.0 - river) * (0.16 + 0.18 * macro);
-	col = mix(col, lit, clamp(litter_w, 0.0, 0.34));
+	float litter_w = (1.0 - path_w) * (1.0 - camp) * (1.0 - river) * (0.22 + 0.26 * macro);
+	col = mix(col, lit, clamp(litter_w, 0.0, 0.42));
+	vec3 moss = vec3(0.26, 0.38, 0.18);
+	float moss_w = (1.0 - path_w) * (1.0 - camp) * (1.0 - river) * (0.10 + 0.16 * macro);
+	col = mix(col, moss, moss_w);
 	vec3 nrm = mix(texture(ground_n, uv_a).rgb, texture(path_n, uv_a * 1.55).rgb, path_w);
 	nrm = mix(nrm, texture(mud_n, uv_a * 1.15).rgb, clamp(river, 0.0, 1.0));
 	float rgh = mix(texture(ground_r, uv_a).r, texture(path_r, uv_a * 1.55).r, path_w);
 	rgh = mix(rgh, texture(mud_r, uv_a * 1.15).r, clamp(river, 0.0, 1.0));
-	ALBEDO = col * 0.90;
+	ALBEDO = col * 0.96;
 	NORMAL_MAP = nrm;
 	ROUGHNESS = clamp(rgh * 0.92 + 0.14, 0.42, 1.0);
 	METALLIC = 0.0;

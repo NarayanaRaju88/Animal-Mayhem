@@ -4,9 +4,9 @@ extends RefCounted
 
 static func all() -> Array[AnimalDefinition]:
 	var list: Array[AnimalDefinition] = []
-	list.append(_def(&"buffalo", "Buffalo", 3.8, 9.4, 3.05, 0.82, 1.75, PackedStringArray(["force"])))
-	list.append(_def(&"monkey", "Monkey", 5.0, 7.4, 2.4, 0.4, 1.2, PackedStringArray(["climb"])))
-	list.append(_def(&"snake", "Snake", 4.4, 6.2, 1.65, 0.3, 0.48, PackedStringArray(["coil", "narrow"])))
+	list.append(_def(&"buffalo", "Buffalo", 3.8, 7.4, 2.0, 0.82, 1.75, PackedStringArray(["force"])))
+	list.append(_def(&"monkey", "Monkey", 5.0, 5.9, 1.7, 0.4, 1.2, PackedStringArray(["climb"])))
+	list.append(_def(&"snake", "Snake", 4.4, 4.2, 1.0, 0.3, 0.48, PackedStringArray(["coil", "narrow"])))
 	return list
 
 
