@@ -15,6 +15,8 @@ var action_name := ""
 var _action_t := 0.0
 
 var abilities: Array[Ability] = []
+var follow_dir := Vector3.ZERO
+var follow_speed_scale := 1.0
 
 
 func play_action(kind: String) -> void:
@@ -99,18 +101,24 @@ func _physics_process(delta: float) -> void:
 	var moving := 0.0
 	var desired := Vector3(velocity.x, 0.0, velocity.z)
 	if active and session != null:
-		var stick: Vector2 = session.move_vector
-		var cam: Node3D = session.camera
-		var basis := cam.global_transform.basis
-		var fwd := -basis.z
-		fwd.y = 0.0
-		if fwd.length() > 0.001:
-			fwd = fwd.normalized()
-		var right := basis.x
-		right.y = 0.0
-		if right.length() > 0.001:
-			right = right.normalized()
-		var dir := fwd * -stick.y + right * stick.x
+		var dir := Vector3.ZERO
+		var scripted := session.scripted_world_dir
+		if scripted.length() > 0.12:
+			scripted.y = 0.0
+			dir = scripted.normalized()
+		else:
+			var stick: Vector2 = session.move_vector
+			var cam: Node3D = session.camera
+			var basis := cam.global_transform.basis
+			var fwd := -basis.z
+			fwd.y = 0.0
+			if fwd.length() > 0.001:
+				fwd = fwd.normalized()
+			var right := basis.x
+			right.y = 0.0
+			if right.length() > 0.001:
+				right = right.normalized()
+			dir = fwd * -stick.y + right * stick.x
 		if dir.length() > 0.12:
 			dir = dir.normalized()
 			desired = dir * definition.move_speed
@@ -120,7 +128,16 @@ func _physics_process(delta: float) -> void:
 		else:
 			desired = Vector3.ZERO
 	else:
-		desired = Vector3.ZERO
+		var wish := follow_dir
+		if wish.length() > 0.12:
+			wish.y = 0.0
+			wish = wish.normalized()
+			desired = wish * definition.move_speed * follow_speed_scale
+			var target_yaw := atan2(wish.x, wish.z)
+			rotation.y = lerp_angle(rotation.y, target_yaw, definition.turn_speed * delta)
+			moving = 1.0
+		else:
+			desired = Vector3.ZERO
 	var accel := 11.0 if desired.length() > 0.1 else 14.0
 	velocity.x = move_toward(velocity.x, desired.x, accel * delta * definition.move_speed)
 	velocity.z = move_toward(velocity.z, desired.z, accel * delta * definition.move_speed)
@@ -192,7 +209,7 @@ func _animate(delta: float, moving: float, speed: float) -> void:
 		tail.rotation_degrees.y = sin(_phase * 1.4) * (14.0 if run else 5.0)
 		tail.rotation_degrees.x = sin(_phase * 0.9) * 4.0
 	if _dust:
-		_dust.emitting = run and active
+		_dust.emitting = run
 	if run:
 		_foot_t += delta
 		if _foot_t > lerpf(0.42, 0.26, gait):
