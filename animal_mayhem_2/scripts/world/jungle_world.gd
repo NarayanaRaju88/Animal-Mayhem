@@ -13,6 +13,8 @@ var look_pointer := -1
 var _validation_lock_follow := false
 var _recovery: AnimalRecovery
 var _objective_marker: ObjectiveMarker
+var party: PartyFollow
+var scripted_world_dir := Vector3.ZERO
 
 @onready var builder: JungleBuilder = $Jungle
 
@@ -27,6 +29,9 @@ func _ready() -> void:
 	add_child(probe)
 	_recovery = AnimalRecovery.new()
 	_recovery.setup(builder)
+	party = PartyFollow.new()
+	party.setup(builder)
+	party.enabled = _party_follow_enabled()
 	_objective_marker = ObjectiveMarker.new()
 	add_child(_objective_marker)
 	_make_hud()
@@ -41,6 +46,8 @@ func _ready() -> void:
 		call_deferred("_phase7_contract_check")
 	if OS.get_environment("AM2_PHASE8_CHECK") != "":
 		call_deferred("_phase8_contract_check")
+	if OS.get_environment("AM2_PHASE9_CHECK") != "" and _party_follow_enabled():
+		call_deferred("_phase9_contract_check")
 
 
 func _spawn_animals() -> void:
@@ -76,6 +83,8 @@ func _process(delta: float) -> void:
 		forest_amt *= 0.72
 	var camp_amt := clampf(1.0 - from_camp / 9.0, 0.0, 1.0)
 	AudioManager.set_mix(water_amt, forest_amt, camp_amt)
+	if party:
+		party.tick(animals, active_index)
 	if camera.target and not _validation_lock_follow:
 		camera.distance = lerp(camera.distance, active.definition.camera_distance, 1.0 - exp(-delta * 2.4))
 		camera.height = lerp(camera.height, active.definition.camera_height, 1.0 - exp(-delta * 2.4))
@@ -629,4 +638,224 @@ func _wait_sec(sec: float) -> void:
 	var end := Time.get_ticks_msec() + int(sec * 1000.0)
 	while Time.get_ticks_msec() < end:
 		await get_tree().process_frame
+
+
+func _party_follow_enabled() -> bool:
+	if OS.get_environment("AM2_PHASE7_CHECK") != "":
+		return false
+	if OS.get_environment("AM2_PHASE8_CHECK") != "":
+		return false
+	if OS.get_environment("AM2_SCREENSHOT") != "":
+		return false
+	return true
+
+
+func _phase9_contract_check() -> void:
+	## Env-gated party-follow check. Does not change the player flow.
+	if animals.size() != 3 or party == null or not party.enabled:
+		push_error("PHASE9_FAIL party missing")
+		get_tree().quit(1)
+		return
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	print("PHASE9_PARTY_OK")
+	var layers: Array[int] = []
+	var masks: Array[int] = []
+	var ability_counts: Array[int] = []
+	for a in animals:
+		layers.append(a.collision_layer)
+		masks.append(a.collision_mask)
+		ability_counts.append(a.abilities.size())
+	_switch(0, true)
+	_phase9_place(animals[0], Vector2(2.2, 0.0))
+	_phase9_place(animals[1], Vector2(0.4, 0.45))
+	_phase9_place(animals[2], Vector2(0.2, -0.45))
+	animals[0].rotation.y = PI * 0.5
+	var buffalo_start := animals[0].global_position.x
+	scripted_world_dir = Vector3(1, 0, 0)
+	await _wait_sec(1.7)
+	scripted_world_dir = Vector3.ZERO
+	var buffalo := animals[0]
+	var monkey := animals[1]
+	var snake := animals[2]
+	if buffalo.global_position.x < buffalo_start + 2.4:
+		push_error("PHASE9_FAIL leader did not walk x=%s start=%s" % [buffalo.global_position.x, buffalo_start])
+		get_tree().quit(1)
+		return
+	if buffalo.global_position.x > 11.2 or monkey.global_position.x > 11.2 or snake.global_position.x > 11.2:
+		push_error("PHASE9_FAIL crossed fallen tree early %s %s %s" % [buffalo.global_position, monkey.global_position, snake.global_position])
+		get_tree().quit(1)
+		return
+	if monkey.global_position.distance_to(buffalo.global_position) > 6.5:
+		push_error("PHASE9_FAIL monkey did not follow %s" % monkey.global_position)
+		get_tree().quit(1)
+		return
+	if snake.global_position.distance_to(buffalo.global_position) > 6.5:
+		push_error("PHASE9_FAIL snake did not follow %s" % snake.global_position)
+		get_tree().quit(1)
+		return
+	if GameState.tree_cleared or GameState.climb_done or GameState.coil_done or GameState.step != GameState.Step.INTRO:
+		push_error("PHASE9_FAIL follow mutated GameState")
+		get_tree().quit(1)
+		return
+	if not _phase9_bodies_intact(layers, masks, ability_counts):
+		return
+	print("PHASE9_TRAIL_FOLLOW_OK leader=", buffalo.global_position)
+	_phase9_place(buffalo, Vector2(18.0, 0.0))
+	buffalo.rotation.y = PI * 0.5
+	_phase9_place(monkey, Vector2(4.0, 0.4))
+	_phase9_place(snake, Vector2(3.2, -0.3))
+	await _wait_sec(3.2)
+	if monkey.global_position.x > 12.0 or snake.global_position.x > 12.0:
+		push_error("PHASE9_FAIL gate hold tree %s %s" % [monkey.global_position, snake.global_position])
+		get_tree().quit(1)
+		return
+	if monkey.global_position.x < 6.5:
+		push_error("PHASE9_FAIL monkey did not approach tree %s" % monkey.global_position)
+		get_tree().quit(1)
+		return
+	if GameState.tree_cleared:
+		push_error("PHASE9_FAIL tree hold cleared the tree")
+		get_tree().quit(1)
+		return
+	print("PHASE9_TREE_HOLD_OK")
+	_phase9_open_tree()
+	_phase9_place(buffalo, Vector2(17.5, 0.0))
+	buffalo.rotation.y = PI * 0.5
+	await _wait_sec(4.0)
+	if monkey.global_position.x < 13.2 or snake.global_position.x < 13.2:
+		push_error("PHASE9_FAIL did not cross opened tree %s %s" % [monkey.global_position, snake.global_position])
+		get_tree().quit(1)
+		return
+	print("PHASE9_TREE_CROSS_OK")
+	_switch(1, true)
+	var ledge_y := builder.height_at(24.5, 12.0) + 4.65
+	monkey.global_position = Vector3(24.5, ledge_y, 13.0)
+	monkey.velocity = Vector3.ZERO
+	_phase9_place(buffalo, Vector2(24.5, 5.4))
+	_phase9_place(snake, Vector2(23.4, 5.2))
+	await _wait_sec(2.4)
+	var b_ground := builder.height_at(buffalo.global_position.x, buffalo.global_position.z)
+	if buffalo.global_position.y > b_ground + 1.8:
+		push_error("PHASE9_FAIL buffalo climbed %s" % buffalo.global_position)
+		get_tree().quit(1)
+		return
+	if Vector2(buffalo.global_position.x, buffalo.global_position.z).distance_to(Vector2(24.5, 12.0)) < 2.2:
+		push_error("PHASE9_FAIL buffalo entered climb top %s" % buffalo.global_position)
+		get_tree().quit(1)
+		return
+	if monkey.global_position.y < ledge_y - 1.2:
+		push_error("PHASE9_FAIL monkey leader was pulled down %s" % monkey.global_position)
+		get_tree().quit(1)
+		return
+	print("PHASE9_CLIMB_WAIT_OK")
+	_switch(2, true)
+	_phase9_place(snake, Vector2(35.2, -8.5))
+	_phase9_place(buffalo, Vector2(15.2, -8.0))
+	_phase9_place(monkey, Vector2(14.4, -7.2))
+	await _wait_sec(2.6)
+	if _phase9_in_river(buffalo.global_position) or _phase9_in_river(monkey.global_position):
+		push_error("PHASE9_FAIL follower entered river %s %s" % [buffalo.global_position, monkey.global_position])
+		get_tree().quit(1)
+		return
+	if buffalo.global_position.x > 30.0 or monkey.global_position.x > 30.0:
+		push_error("PHASE9_FAIL follower crossed gap %s %s" % [buffalo.global_position, monkey.global_position])
+		get_tree().quit(1)
+		return
+	if Vector2(snake.global_position.x, snake.global_position.z).distance_to(Vector2(35.2, -8.5)) > 1.6:
+		push_error("PHASE9_FAIL snake leader left the coil pad %s" % snake.global_position)
+		get_tree().quit(1)
+		return
+	print("PHASE9_GAP_HOLD_OK")
+	_phase9_place(snake, Vector2(43.0, 0.0))
+	snake.rotation.y = PI * 0.5
+	_phase9_place(buffalo, Vector2(34.2, 0.2))
+	_phase9_place(monkey, Vector2(33.4, -0.2))
+	await _wait_sec(3.0)
+	if buffalo.global_position.x > 38.3 or monkey.global_position.x > 38.3:
+		push_error("PHASE9_FAIL crossed vine early %s %s" % [buffalo.global_position, monkey.global_position])
+		get_tree().quit(1)
+		return
+	if buffalo.global_position.x < 34.6:
+		push_error("PHASE9_FAIL buffalo did not approach vine %s" % buffalo.global_position)
+		get_tree().quit(1)
+		return
+	if GameState.coil_done:
+		push_error("PHASE9_FAIL vine hold coiled the post")
+		get_tree().quit(1)
+		return
+	print("PHASE9_VINE_HOLD_OK")
+	_phase9_open_vine()
+	_switch(0, true)
+	_phase9_place(buffalo, Vector2(44.0, 0.0))
+	buffalo.rotation.y = PI * 0.5
+	_phase9_place(monkey, Vector2(6.0, 0.3))
+	_phase9_place(snake, Vector2(5.2, -0.3))
+	var snaps_before := party.snap_count
+	await _wait_sec(0.45)
+	if party.snap_count < snaps_before + 2:
+		push_error("PHASE9_FAIL expected leash snaps got %s" % party.snap_count)
+		get_tree().quit(1)
+		return
+	if monkey.global_position.distance_to(buffalo.global_position) > 6.0:
+		push_error("PHASE9_FAIL monkey did not rejoin %s" % monkey.global_position)
+		get_tree().quit(1)
+		return
+	if snake.global_position.distance_to(buffalo.global_position) > 6.0:
+		push_error("PHASE9_FAIL snake did not rejoin %s" % snake.global_position)
+		get_tree().quit(1)
+		return
+	print("PHASE9_SNAP_OK")
+	if not _phase9_bodies_intact(layers, masks, ability_counts):
+		return
+	print("PHASE9_ALL_OK")
+	get_tree().quit(0)
+
+
+func _phase9_bodies_intact(layers: Array[int], masks: Array[int], ability_counts: Array[int]) -> bool:
+	for i in animals.size():
+		if animals[i].collision_layer != layers[i] or animals[i].collision_mask != masks[i]:
+			push_error("PHASE9_FAIL collision changed id=%s" % animals[i].definition.id)
+			get_tree().quit(1)
+			return false
+		if animals[i].abilities.size() != ability_counts[i]:
+			push_error("PHASE9_FAIL abilities changed id=%s" % animals[i].definition.id)
+			get_tree().quit(1)
+			return false
+	return true
+
+
+func _phase9_place(animal: AnimalController, xz: Vector2) -> void:
+	animal.global_position = Vector3(xz.x, builder.height_at(xz.x, xz.y) + 0.3, xz.y)
+	animal.velocity = Vector3.ZERO
+	animal.follow_dir = Vector3.ZERO
+
+
+func _phase9_in_river(pos: Vector3) -> bool:
+	return pos.x > 18.0 and pos.x < 34.0 and pos.z > -14.0 and pos.z < -4.0
+
+
+func _phase9_open_tree() -> void:
+	for n in builder.get_children():
+		if n is FallenTree:
+			var tree := n as FallenTree
+			tree.moved = true
+			tree.collision_layer = 0
+			tree.position.z += 6.5
+			tree.rotation_degrees.y = 28.0
+			break
+	if not GameState.tree_cleared:
+		GameState.mark_tree_cleared()
+
+
+func _phase9_open_vine() -> void:
+	for n in builder.get_children():
+		if n is CoilPost:
+			var post := n as CoilPost
+			post.coiled = true
+			if post.vine_gate:
+				post.vine_gate.position.y -= 5.0
+			break
+	if not GameState.coil_done:
+		GameState.mark_coil_done()
 

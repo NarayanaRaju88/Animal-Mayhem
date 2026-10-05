@@ -67,6 +67,17 @@ Meshes are **project-owned constructed animals** (`AnimalVisuals`) with generate
 
 Camp → blocked path (Buffalo push) → high rocks (Monkey climb) → narrow gap + coil post (Snake) → vine wall opens → reach the explorer → mission complete.
 
+## Party
+
+The animal you are controlling leads. The other two follow in a short line on reachable ground. They stop and wait instead of pathing around a gate they cannot use:
+
+- Fallen tree, until the buffalo pushes it clear
+- Vine gate, until the snake coils the post
+- Narrow gap and the river, unless the follower is the snake
+- High rocks, while the leader is up on the climb
+
+If a follower is left far behind on open ground, they rejoin beside the leader. Switching animals still leaves abilities, collision, and mission progress unchanged.
+
 ## Asset licensing
 
 - Code, assembled animal meshes, shaders: project-owned.
@@ -80,7 +91,7 @@ See `ASSETS.md`.
 
 - Animal bodies are lofted constructed meshes (semi-realistic / realistic-inspired), not scanned GLTF. Faces and fur are simplified.
 - Vegetation uses clustered / flattened canopy meshes with CC0 tiling textures, not photogrammetry trees.
-- Inactive animals wait in place (no follow-AI — out of visual-pass scope).
+- Followers wait at puzzle gates; they do not path around the fallen tree, vine gate, narrow gap, or climb.
 - One jungle, one mission, three animals — by design.
 - Android APK is not built in this cloud environment (no export templates / SDK).
 
