@@ -230,13 +230,13 @@ func _animate_snake(run: bool) -> void:
 			if coil:
 				var ang := i * (TAU / maxf(float(count), 1.0)) + _action_t * 4.2
 				var rad := 0.22 + i * 0.012
-				c.position = Vector3(cos(ang) * rad, 0.055 + i * 0.018, sin(ang) * rad)
+				c.position = Vector3(cos(ang) * rad, 0.12 + i * 0.018, sin(ang) * rad)
 			else:
-				var amp := 0.22 if run else 0.09
+				var amp := 0.22 if run else 0.16
 				var lag := float(i) * 0.52
 				var wave := sin(_phase * 2.8 - lag)
 				c.position.x = wave * amp * (1.0 - float(i) / 26.0)
-				c.position.y = 0.055 + absf(wave) * 0.016
+				c.position.y = 0.12 + absf(wave) * 0.02
 				c.position.z = -float(i) * spacing
 			i += 1
 	var hd := _visual.get_node_or_null("Head")
@@ -247,7 +247,7 @@ func _animate_snake(run: bool) -> void:
 			hd.rotation_degrees.x = -8.0
 		else:
 			var lead := sin(_phase * 2.6) * (0.16 if run else 0.04)
-			hd.position = Vector3(lead, 0.1, 0.26)
+			hd.position = Vector3(lead, 0.16, 0.26)
 			hd.rotation_degrees.y = sin(_phase * 0.9) * (18.0 if run else 6.0)
 			hd.rotation_degrees.x = sin(_phase * 1.1) * (5.0 if run else 2.0)
 		var tongue := hd.get_node_or_null("Tongue")

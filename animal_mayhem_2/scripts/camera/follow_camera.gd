@@ -3,8 +3,8 @@ extends Node3D
 ## Third-person adventure camera. Animal stays readable; jungle fills most of the frame.
 
 var target: Node3D
-var distance := 6.15
-var height := 1.72
+var distance := 5.45
+var height := 1.18
 var yaw := 2.55
 var pitch := -0.06
 var _look_drag := Vector2.ZERO

@@ -17,6 +17,9 @@ static func loft(
 		return ArrayMesh.new()
 	var rings: Array[PackedVector3Array] = []
 	var uvs: Array[PackedVector2Array] = []
+	# Carry the cross-section frame along the path so vertical legs and
+	# bent necks do not flip and spike.
+	var prev_binorm := Vector3.ZERO
 	for i in n:
 		var tangent := Vector3(0, 0, 1)
 		if i < n - 1:
@@ -26,10 +29,13 @@ static func loft(
 		if tangent.length_squared() < 0.00001:
 			tangent = Vector3(0, 0, 1)
 		tangent = tangent.normalized()
-		var binorm := tangent.cross(Vector3.UP)
-		if binorm.length_squared() < 0.00001:
-			binorm = tangent.cross(Vector3.RIGHT)
+		var binorm := prev_binorm - tangent * prev_binorm.dot(tangent)
+		if binorm.length_squared() < 0.0001:
+			binorm = tangent.cross(Vector3.UP)
+			if binorm.length_squared() < 0.0001:
+				binorm = tangent.cross(Vector3.RIGHT)
 		binorm = binorm.normalized()
+		prev_binorm = binorm
 		var norm := binorm.cross(tangent).normalized()
 		var ring := PackedVector3Array()
 		var uvring := PackedVector2Array()

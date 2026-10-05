@@ -52,12 +52,16 @@ uniform sampler2D hide : source_color, filter_linear_mipmap_anisotropic;
 uniform vec4 tint : source_color = vec4(1.0);
 uniform float detail : hint_range(0.0, 1.0) = 0.26;
 uniform float rough : hint_range(0.0, 1.0) = 0.72;
+uniform float top_light : hint_range(0.0, 1.0) = 0.0;
 void fragment() {
 	vec3 tex = texture(hide, UV).rgb;
 	float luma = dot(tex, vec3(0.30, 0.52, 0.18));
 	vec3 flat_col = tint.rgb;
 	vec3 marked = tint.rgb * mix(vec3(0.78), vec3(1.18), clamp(luma, 0.0, 1.0));
-	ALBEDO = mix(flat_col, marked, detail);
+	vec3 col = mix(flat_col, marked, detail);
+	float crest = smoothstep(0.45, 0.92, NORMAL.y);
+	col = mix(col, col * vec3(1.45, 1.32, 0.55), top_light * crest);
+	ALBEDO = col;
 	ROUGHNESS = rough;
 	METALLIC = 0.0;
 	SPECULAR = 0.28;
@@ -69,6 +73,7 @@ void fragment() {
 	mat.set_shader_parameter("tint", tint)
 	mat.set_shader_parameter("detail", detail)
 	mat.set_shader_parameter("rough", rough)
+	mat.set_shader_parameter("top_light", 0.0)
 	return mat
 
 

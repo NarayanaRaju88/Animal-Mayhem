@@ -269,7 +269,7 @@ func _apply_validation_shot(shot: String) -> void:
 	var y := builder.height_at(xz.x, xz.y) + 0.25
 	a.global_position = Vector3(xz.x, y, xz.y)
 	a.velocity = Vector3.ZERO
-	a.rotation.y = 1.2
+	a.rotation.y = 2.55 + 0.95 if shot == "C" else 1.2
 	_validation_lock_follow = false
 	camera.yaw = 2.55
 	camera.pitch = -0.06
@@ -285,6 +285,17 @@ func _apply_validation_shot(shot: String) -> void:
 		camera.height = 2.35
 		camera.yaw = 0.92
 		camera.pitch = -0.08
+	var away := Vector3(-sin(camera.yaw), 0.0, -cos(camera.yaw))
+	var flank := Vector3(away.z, 0.0, -away.x)
+	var slot := 0
+	for i in animals.size():
+		if i == animal_i:
+			continue
+		slot += 1
+		var side := -2.1 if slot == 1 else 2.1
+		var parked: Vector3 = a.global_position + away * (3.4 + float(slot) * 0.6) + flank * side
+		animals[i].global_position = Vector3(parked.x, builder.height_at(parked.x, parked.z) + 0.3, parked.z)
+		animals[i].velocity = Vector3.ZERO
 	camera.global_position = a.global_position + Vector3(
 		sin(camera.yaw) * camera.distance,
 		camera.height,

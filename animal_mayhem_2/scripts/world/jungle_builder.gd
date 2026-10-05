@@ -54,8 +54,8 @@ func _init_jungle_shared() -> void:
 	_canopy_mesh = CapsuleMesh.new()
 	_canopy_mesh.radius = 0.82
 	_canopy_mesh.height = 1.68
-	_canopy_mesh.radial_segments = 7
-	_canopy_mesh.rings = 4
+	_canopy_mesh.radial_segments = 12
+	_canopy_mesh.rings = 6
 	_bush_mesh = CapsuleMesh.new()
 	_bush_mesh.radius = 0.46
 	_bush_mesh.height = 0.96
@@ -439,7 +439,7 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 		smi.mesh = _canopy_mesh
 		smi.material_override = leaf if k % 3 != 2 else _leaf_mat(rng)
 		var ang := TAU * float(k) / float(clumps) + rng.randf_range(-0.35, 0.35)
-		var rad := rng.randf_range(0.04, 0.52)
+		var rad := rng.randf_range(0.18, 0.85)
 		var layer := 0.0 if k < 3 else rng.randf_range(0.12, 0.55)
 		smi.position = Vector3(
 			cos(ang) * rad,
@@ -452,9 +452,9 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 			rng.randf_range(-18, 18)
 		)
 		smi.scale = Vector3(
-			rng.randf_range(1.25, 1.95),
-			rng.randf_range(0.62, 0.98),
-			rng.randf_range(1.15, 1.85)
+			rng.randf_range(1.15, 1.75),
+			rng.randf_range(0.85, 1.28),
+			rng.randf_range(1.05, 1.65)
 		)
 		smi.cast_shadow = (
 			GeometryInstance3D.SHADOW_CASTING_SETTING_ON
