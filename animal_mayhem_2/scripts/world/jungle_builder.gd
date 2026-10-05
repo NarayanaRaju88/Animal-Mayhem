@@ -54,8 +54,8 @@ func _init_jungle_shared() -> void:
 	_canopy_mesh = CapsuleMesh.new()
 	_canopy_mesh.radius = 0.82
 	_canopy_mesh.height = 1.68
-	_canopy_mesh.radial_segments = 7
-	_canopy_mesh.rings = 4
+	_canopy_mesh.radial_segments = 12
+	_canopy_mesh.rings = 6
 	_bush_mesh = CapsuleMesh.new()
 	_bush_mesh.radius = 0.46
 	_bush_mesh.height = 0.96
@@ -76,23 +76,23 @@ func _init_jungle_shared() -> void:
 	_vine_mesh.bottom_radius = 0.035
 	_vine_mesh.height = 1.0
 	_vine_mesh.radial_segments = 5
-	_bark_pool.append(_make_bark("bark_willow", Color(0.92, 0.88, 0.82), 1.6))
-	_bark_pool.append(_make_bark("bark_willow", Color(0.78, 0.7, 0.62), 2.1))
-	_bark_pool.append(_make_bark("bark_brown_01", Color(0.88, 0.82, 0.74), 1.5))
-	_bark_pool.append(_make_bark("bark_brown_01", Color(0.7, 0.62, 0.52), 2.3))
-	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.48, 0.62, 0.34), 1.1))
-	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.34, 0.50, 0.26), 0.85))
-	_leaf_pool.append(_make_leaf("leafy_grass", Color(0.42, 0.58, 0.30), 1.35))
-	_leaf_pool.append(_make_leaf("leafy_grass", Color(0.28, 0.44, 0.20), 1.0))
-	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.52, 0.64, 0.32), 1.55))
+	_bark_pool.append(_make_bark("bark_willow", Color(0.72, 0.50, 0.32), 1.6))
+	_bark_pool.append(_make_bark("bark_willow", Color(0.56, 0.38, 0.24), 2.1))
+	_bark_pool.append(_make_bark("bark_brown_01", Color(0.64, 0.44, 0.28), 1.5))
+	_bark_pool.append(_make_bark("bark_brown_01", Color(0.46, 0.30, 0.18), 2.3))
+	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.62, 0.78, 0.36), 1.1))
+	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.34, 0.58, 0.28), 0.85))
+	_leaf_pool.append(_make_leaf("leafy_grass", Color(0.55, 0.74, 0.32), 1.35))
+	_leaf_pool.append(_make_leaf("leafy_grass", Color(0.28, 0.50, 0.24), 1.0))
+	_leaf_pool.append(_make_leaf("forest_leaves_03", Color(0.70, 0.84, 0.40), 1.55))
 	_rock_box = BoxMesh.new()
 	_rock_box.size = Vector3.ONE
 	var moss := MaterialLibrary.pbr("mossy_rock", 1.0)
-	moss.albedo_color = Color(0.88, 0.9, 0.82)
+	moss.albedo_color = Color(0.62, 0.70, 0.48)
 	moss.roughness = 0.9
 	_rock_pool.append(moss)
 	var aerial := MaterialLibrary.pbr("aerial_rocks_02", 1.15)
-	aerial.albedo_color = Color(0.86, 0.88, 0.8)
+	aerial.albedo_color = Color(0.70, 0.66, 0.54)
 	aerial.roughness = 0.88
 	_rock_pool.append(aerial)
 	_litter_mat = MaterialLibrary.pbr("forest_leaves_03", 2.0)
@@ -159,19 +159,19 @@ func _environment() -> void:
 	var sky := Sky.new()
 	var pano := PanoramaSkyMaterial.new()
 	pano.panorama = load("res://assets/environment/hdris/rainforest_trail_1k.hdr")
-	pano.energy_multiplier = 0.50
+	pano.energy_multiplier = 0.72
 	sky.sky_material = pano
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_energy = 0.36
-	e.ambient_light_sky_contribution = 0.68
+	e.ambient_light_energy = 0.52
+	e.ambient_light_sky_contribution = 0.74
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	e.tonemap_exposure = 0.78
+	e.tonemap_exposure = 0.94
 	e.adjustment_enabled = true
-	e.adjustment_saturation = 0.96
+	e.adjustment_saturation = 1.12
 	e.fog_enabled = true
-	e.fog_light_color = Color(0.48, 0.56, 0.42)
-	e.fog_density = 0.011
+	e.fog_light_color = Color(0.74, 0.82, 0.62)
+	e.fog_density = 0.0065
 	e.fog_aerial_perspective = 0.64
 	e.fog_sky_affect = 0.28
 	e.fog_sun_scatter = 0.08
@@ -185,8 +185,8 @@ func _environment() -> void:
 func _sun() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-46, 32, 0)
-	sun.light_energy = 0.80
-	sun.light_color = Color(1.0, 0.91, 0.74)
+	sun.light_energy = 1.08
+	sun.light_color = Color(1.0, 0.94, 0.78)
 	sun.light_angular_distance = 1.05
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.045
@@ -195,8 +195,8 @@ func _sun() -> void:
 	add_child(sun)
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-18, -138, 0)
-	fill.light_energy = 0.18
-	fill.light_color = Color(0.40, 0.54, 0.50)
+	fill.light_energy = 0.28
+	fill.light_color = Color(0.55, 0.72, 0.58)
 	fill.shadow_enabled = false
 	add_child(fill)
 
@@ -277,8 +277,8 @@ func _water() -> void:
 	sh.code = """
 shader_type spatial;
 render_mode blend_mix, specular_schlick_ggx, cull_disabled, depth_draw_opaque;
-uniform vec4 shallow : source_color = vec4(0.16, 0.34, 0.30, 0.78);
-uniform vec4 deep : source_color = vec4(0.04, 0.12, 0.16, 0.92);
+uniform vec4 shallow : source_color = vec4(0.28, 0.62, 0.52, 0.82);
+uniform vec4 deep : source_color = vec4(0.08, 0.28, 0.32, 0.92);
 void vertex() {
 	VERTEX.y += sin(TIME * 1.05 + VERTEX.x * 0.38 + VERTEX.z * 0.28) * 0.045;
 	VERTEX.y += sin(TIME * 1.6 + VERTEX.z * 0.7) * 0.018;
@@ -432,14 +432,14 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 			)
 			br.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			root.add_child(br)
-	var clumps := 4 + rng.randi() % 3
+	var clumps := 5 + rng.randi() % 3
 	var canopy_base := trunk.height * rng.randf_range(0.86, 1.02)
 	for k in range(clumps):
 		var smi := MeshInstance3D.new()
 		smi.mesh = _canopy_mesh
 		smi.material_override = leaf if k % 3 != 2 else _leaf_mat(rng)
 		var ang := TAU * float(k) / float(clumps) + rng.randf_range(-0.35, 0.35)
-		var rad := rng.randf_range(0.04, 0.52)
+		var rad := rng.randf_range(0.18, 0.85)
 		var layer := 0.0 if k < 3 else rng.randf_range(0.12, 0.55)
 		smi.position = Vector3(
 			cos(ang) * rad,
@@ -452,9 +452,9 @@ func _tree(pos: Vector3, rng: RandomNumberGenerator) -> void:
 			rng.randf_range(-18, 18)
 		)
 		smi.scale = Vector3(
-			rng.randf_range(1.35, 2.15),
-			rng.randf_range(0.28, 0.52),
-			rng.randf_range(1.25, 2.05)
+			rng.randf_range(1.15, 1.75),
+			rng.randf_range(0.85, 1.28),
+			rng.randf_range(1.05, 1.65)
 		)
 		smi.cast_shadow = (
 			GeometryInstance3D.SHADOW_CASTING_SETTING_ON
@@ -911,7 +911,7 @@ func _atmosphere() -> void:
 	mat.gravity = Vector3(0, -0.02, 0)
 	mat.scale_min = 0.04
 	mat.scale_max = 0.1
-	mat.color = Color(0.72, 0.80, 0.60, 0.22)
+	mat.color = Color(0.86, 0.90, 0.62, 0.28)
 	dust.process_material = mat
 	var pm := SphereMesh.new()
 	pm.radius = 0.035
@@ -923,7 +923,7 @@ func _atmosphere() -> void:
 
 func _horizon() -> void:
 	var hill_mat := MaterialLibrary.pbr("forest_ground_04", 0.08)
-	hill_mat.albedo_color = Color(0.38, 0.44, 0.28)
+	hill_mat.albedo_color = Color(0.40, 0.55, 0.32)
 	hill_mat.roughness = 0.92
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
@@ -1071,9 +1071,9 @@ func _camp() -> void:
 	es.height = 0.06
 	embers.draw_pass_1 = es
 	add_child(embers)
-	var canvas := MaterialLibrary.fabric(Color(0.66, 0.55, 0.38), 2.6)
-	var canvas_shade := MaterialLibrary.fabric(Color(0.52, 0.42, 0.28), 3.1)
-	var canvas_flap := MaterialLibrary.fabric(Color(0.44, 0.34, 0.22), 2.2)
+	var canvas := MaterialLibrary.fabric(Color(0.84, 0.66, 0.40), 2.6)
+	var canvas_shade := MaterialLibrary.fabric(Color(0.70, 0.50, 0.32), 3.1)
+	var canvas_flap := MaterialLibrary.fabric(Color(0.58, 0.40, 0.26), 2.2)
 	var poles := _bark_pool[2]
 	var tent_root := Node3D.new()
 	tent_root.position = Vector3(-3.3, hy, -2.5)

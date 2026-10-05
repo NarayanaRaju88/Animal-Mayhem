@@ -89,7 +89,7 @@ See `ASSETS.md`.
 
 ## Known limitations
 
-- Animal bodies are lofted constructed meshes (semi-realistic / realistic-inspired), not scanned GLTF. Faces and fur are simplified.
+- Animal bodies are lofted stylized meshes, not scanned GLTF. Faces and fur are simplified on purpose.
 - Vegetation uses clustered / flattened canopy meshes with CC0 tiling textures, not photogrammetry trees.
 - Followers wait at puzzle gates; they do not path around the fallen tree, vine gate, narrow gap, or climb.
 - One jungle, one mission, three animals — by design.

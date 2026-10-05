@@ -43,6 +43,40 @@ static func animal(
 	return m
 
 
+static func stylized_hide(tex_name: String, tint: Color, rough := 0.72, detail := 0.26) -> ShaderMaterial:
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode cull_back, diffuse_burley, specular_schlick_ggx;
+uniform sampler2D hide : source_color, filter_linear_mipmap_anisotropic;
+uniform vec4 tint : source_color = vec4(1.0);
+uniform float detail : hint_range(0.0, 1.0) = 0.26;
+uniform float rough : hint_range(0.0, 1.0) = 0.72;
+uniform float top_light : hint_range(0.0, 1.0) = 0.0;
+void fragment() {
+	vec3 tex = texture(hide, UV).rgb;
+	float luma = dot(tex, vec3(0.30, 0.52, 0.18));
+	vec3 flat_col = tint.rgb;
+	vec3 marked = tint.rgb * mix(vec3(0.78), vec3(1.18), clamp(luma, 0.0, 1.0));
+	vec3 col = mix(flat_col, marked, detail);
+	float crest = smoothstep(0.45, 0.92, NORMAL.y);
+	col = mix(col, col * vec3(1.45, 1.32, 0.55), top_light * crest);
+	ALBEDO = col;
+	ROUGHNESS = rough;
+	METALLIC = 0.0;
+	SPECULAR = 0.28;
+}
+"""
+	var mat := ShaderMaterial.new()
+	mat.shader = sh
+	mat.set_shader_parameter("hide", load("res://assets/animals/textures/%s" % tex_name))
+	mat.set_shader_parameter("tint", tint)
+	mat.set_shader_parameter("detail", detail)
+	mat.set_shader_parameter("rough", rough)
+	mat.set_shader_parameter("top_light", 0.0)
+	return mat
+
+
 static func terrain_blend() -> ShaderMaterial:
 	var sh := Shader.new()
 	sh.code = """
@@ -83,11 +117,13 @@ void fragment() {
 	vec3 moss = vec3(0.26, 0.38, 0.18);
 	float moss_w = (1.0 - path_w) * (1.0 - camp) * (1.0 - river) * (0.10 + 0.16 * macro);
 	col = mix(col, moss, moss_w);
+	col = mix(col, vec3(0.58, 0.48, 0.30), 0.22);
+	col = mix(col, vec3(0.50, 0.66, 0.32), moss_w * 0.65);
 	vec3 nrm = mix(texture(ground_n, uv_a).rgb, texture(path_n, uv_a * 1.55).rgb, path_w);
 	nrm = mix(nrm, texture(mud_n, uv_a * 1.15).rgb, clamp(river, 0.0, 1.0));
 	float rgh = mix(texture(ground_r, uv_a).r, texture(path_r, uv_a * 1.55).r, path_w);
 	rgh = mix(rgh, texture(mud_r, uv_a * 1.15).r, clamp(river, 0.0, 1.0));
-	ALBEDO = col * 0.96;
+	ALBEDO = col * 1.04;
 	NORMAL_MAP = nrm;
 	ROUGHNESS = clamp(rgh * 0.92 + 0.14, 0.42, 1.0);
 	METALLIC = 0.0;
