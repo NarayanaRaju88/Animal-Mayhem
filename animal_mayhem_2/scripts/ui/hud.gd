@@ -8,10 +8,10 @@ signal look_moved(relative: Vector2)
 const _INK := Color(0.96, 0.93, 0.84, 0.98)
 const _INK_DIM := Color(0.86, 0.80, 0.58, 0.94)
 const _INK_MUTED := Color(0.78, 0.80, 0.70, 0.92)
-const _PANEL := Color(0.05, 0.08, 0.06, 0.88)
-const _PANEL_SOFT := Color(0.07, 0.10, 0.08, 0.86)
-const _LINE := Color(0.92, 0.80, 0.42, 0.72)
-const _GOLD := Color(0.96, 0.84, 0.42, 0.98)
+const _PANEL := Color(0.08, 0.14, 0.10, 0.82)
+const _PANEL_SOFT := Color(0.10, 0.16, 0.12, 0.80)
+const _LINE := Color(0.86, 0.78, 0.48, 0.55)
+const _GOLD := Color(0.93, 0.86, 0.55, 0.96)
 const _ANIMAL_NAMES := ["Buffalo", "Monkey", "Snake"]
 const _ANIMAL_ACCENT := [
 	Color(0.76, 0.62, 0.34, 0.95),

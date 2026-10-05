@@ -261,6 +261,10 @@ func _apply_validation_shot(shot: String) -> void:
 		_:
 			return
 	_switch(animal_i, true)
+	if hud and hud.has_node("Root/Intro"):
+		hud.get_node("Root/Intro").visible = false
+	if hud and hud.has_node("Root/LookHint"):
+		hud.get_node("Root/LookHint").visible = false
 	var a := animals[animal_i]
 	var y := builder.height_at(xz.x, xz.y) + 0.25
 	a.global_position = Vector3(xz.x, y, xz.y)

@@ -1,7 +1,7 @@
 class_name AnimalVisuals
 extends RefCounted
-## Semi-realistic lofted animals. Swap this builder for licensed GLTF later.
-## Suitable licensed photogrammetry buffalo/monkey/snake GLTF was not available.
+## Stylized lofted animals. Swap this builder if a licensed mesh is added later.
+## Colors stay flat and readable. Generated hide maps are only a light mark.
 
 
 static func build(kind: StringName, parent: Node3D) -> void:
@@ -74,11 +74,11 @@ static func _ground_contact(parent: Node3D, radius: float, along_z := 1.0) -> vo
 
 
 static func _buffalo(p: Node3D) -> void:
-	p.scale = Vector3(1.04, 1.04, 1.04)
-	var hide := MaterialLibrary.animal("buffalo_hide.png", Color(0.52, 0.38, 0.24), 0.92, 0.13, 0.78)
-	var dark := MaterialLibrary.animal("buffalo_hide.png", Color(0.22, 0.14, 0.08), 0.94, 0.10, 0.82)
-	var horn := _color_mat(Color(0.32, 0.24, 0.16), 0.58)
-	var keratin := _color_mat(Color(0.16, 0.11, 0.08), 0.78)
+	p.scale = Vector3(1.08, 1.08, 1.08)
+	var hide := MaterialLibrary.stylized_hide("buffalo_hide.png", Color(0.55, 0.36, 0.22), 0.78, 0.34)
+	var dark := MaterialLibrary.stylized_hide("buffalo_hide.png", Color(0.16, 0.11, 0.09), 0.82, 0.22)
+	var horn := _color_mat(Color(0.93, 0.84, 0.62), 0.42)
+	var keratin := _color_mat(Color(0.12, 0.08, 0.06), 0.7)
 	var eye_w := _color_mat(Color(0.78, 0.74, 0.64), 0.46)
 	var pupil := _color_mat(Color(0.05, 0.04, 0.03), 0.32)
 	_ground_contact(p, 0.72, 1.55)
@@ -88,7 +88,7 @@ static func _buffalo(p: Node3D) -> void:
 	]), PackedFloat32Array([0.32, 0.52, 0.62, 0.56, 0.42, 0.26]), 14, 1.22, 0.74), hide, Vector3.ZERO, Vector3.ZERO, Vector3.ONE, "Body")
 	_mesh(p, _loft(PackedVector3Array([
 		Vector3(0, 1.04, -0.40), Vector3(0, 1.44, -0.1), Vector3(0, 1.58, 0.1), Vector3(0, 1.22, 0.36)
-	]), PackedFloat32Array([0.32, 0.44, 0.36, 0.20]), 12, 1.12, 0.82), dark, Vector3.ZERO, Vector3.ZERO, Vector3.ONE, "Hump")
+	]), PackedFloat32Array([0.36, 0.50, 0.40, 0.22]), 12, 1.16, 0.86), dark, Vector3.ZERO, Vector3.ZERO, Vector3.ONE, "Hump")
 	_mesh(p, _loft(PackedVector3Array([
 		Vector3(0, 0.98, 0.72), Vector3(0, 1.08, 0.98), Vector3(0, 1.14, 1.2)
 	]), PackedFloat32Array([0.36, 0.28, 0.18]), 12, 1.1, 0.8), hide, Vector3.ZERO)
@@ -117,10 +117,10 @@ static func _buffalo(p: Node3D) -> void:
 	_mesh(ear_r, ear_m, dark, Vector3.ZERO, Vector3(8, 0, 22))
 	_mesh(head, OrganicMesh.curve_horn(PackedVector3Array([
 		Vector3(-0.18, 0.16, -0.08), Vector3(-0.34, 0.38, -0.04), Vector3(-0.50, 0.46, 0.04), Vector3(-0.58, 0.32, 0.16)
-	]), 0.098, 0.018, 8), horn, Vector3.ZERO)
+	]), 0.112, 0.022, 8), horn, Vector3.ZERO)
 	_mesh(head, OrganicMesh.curve_horn(PackedVector3Array([
 		Vector3(0.18, 0.16, -0.08), Vector3(0.34, 0.38, -0.04), Vector3(0.50, 0.46, 0.04), Vector3(0.58, 0.32, 0.16)
-	]), 0.098, 0.018, 8), horn, Vector3.ZERO)
+	]), 0.112, 0.022, 8), horn, Vector3.ZERO)
 	_mesh(head, _loft(PackedVector3Array([
 		Vector3(-0.14, 0.05, 0.2), Vector3(-0.14, 0.05, 0.28)
 	]), PackedFloat32Array([0.048, 0.03]), 7, 1.1, 0.7), eye_w, Vector3.ZERO)
@@ -156,9 +156,9 @@ static func _buffalo(p: Node3D) -> void:
 
 
 static func _monkey(p: Node3D) -> void:
-	p.scale = Vector3(1.12, 1.12, 1.12)
-	var fur := MaterialLibrary.animal("monkey_fur.png", Color(0.50, 0.34, 0.20), 0.92, 0.12, 0.72)
-	var skin := _color_mat(Color(0.84, 0.60, 0.46), 0.78)
+	p.scale = Vector3(1.2, 1.2, 1.2)
+	var fur := MaterialLibrary.stylized_hide("monkey_fur.png", Color(0.78, 0.42, 0.20), 0.74, 0.30)
+	var skin := _color_mat(Color(0.96, 0.74, 0.56), 0.62)
 	var dark := _color_mat(Color(0.06, 0.04, 0.03), 0.34)
 	var eye_w := _color_mat(Color(0.93, 0.90, 0.80), 0.42)
 	_ground_contact(p, 0.28, 0.85)
@@ -169,7 +169,7 @@ static func _monkey(p: Node3D) -> void:
 	var head := _pivot(p, "Head", Vector3(0, 1.2, 0.06))
 	_mesh(head, _loft(PackedVector3Array([
 		Vector3(0, 0.04, -0.12), Vector3(0, 0.08, -0.02), Vector3(0, 0.04, 0.08), Vector3(0, -0.02, 0.12)
-	]), PackedFloat32Array([0.16, 0.2, 0.19, 0.14]), 14, 1.12, 0.92), fur, Vector3.ZERO)
+	]), PackedFloat32Array([0.18, 0.24, 0.22, 0.15]), 14, 1.16, 0.96), fur, Vector3.ZERO)
 	_mesh(head, _loft(PackedVector3Array([
 		Vector3(0, 0.12, -0.02), Vector3(0, 0.16, 0.06), Vector3(0, 0.1, 0.12)
 	]), PackedFloat32Array([0.13, 0.11, 0.07]), 10, 1.28, 0.55), fur, Vector3.ZERO)
@@ -236,9 +236,9 @@ static func _monkey(p: Node3D) -> void:
 
 
 static func _snake(p: Node3D) -> void:
-	p.scale = Vector3(1.1, 1.1, 1.1)
-	var scales := MaterialLibrary.animal("snake_scales.png", Color(0.46, 0.32, 0.08), 0.64, 0.20, 0.88)
-	var belly := MaterialLibrary.animal("snake_scales.png", Color(0.90, 0.76, 0.46), 0.72, 0.07, 0.58)
+	p.scale = Vector3(1.16, 1.16, 1.16)
+	var scales := MaterialLibrary.stylized_hide("snake_scales.png", Color(0.18, 0.58, 0.34), 0.48, 0.42)
+	var belly := MaterialLibrary.stylized_hide("snake_scales.png", Color(0.86, 0.90, 0.62), 0.58, 0.18)
 	_ground_contact(p, 0.26, 3.4)
 	var segs := Node3D.new()
 	segs.name = "Segments"
@@ -260,7 +260,7 @@ static func _snake(p: Node3D) -> void:
 	_mesh(head, _loft(PackedVector3Array([
 		Vector3(0, -0.03, 0.04), Vector3(0, -0.05, 0.16), Vector3(0, -0.045, 0.26)
 	]), PackedFloat32Array([0.095, 0.065, 0.034]), 10, 1.22, 0.48), belly, Vector3.ZERO)
-	var gold := _color_mat(Color(0.5, 0.42, 0.12), 0.45)
+	var gold := _color_mat(Color(0.95, 0.82, 0.28), 0.32)
 	_mesh(head, _loft(PackedVector3Array([
 		Vector3(-0.075, 0.04, 0.08), Vector3(-0.075, 0.04, 0.13)
 	]), PackedFloat32Array([0.03, 0.02]), 7, 1.1, 0.7), gold, Vector3.ZERO)

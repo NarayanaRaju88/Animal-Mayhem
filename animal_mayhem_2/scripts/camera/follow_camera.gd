@@ -3,8 +3,8 @@ extends Node3D
 ## Third-person adventure camera. Animal stays readable; jungle fills most of the frame.
 
 var target: Node3D
-var distance := 7.4
-var height := 2.0
+var distance := 6.15
+var height := 1.72
 var yaw := 2.55
 var pitch := -0.06
 var _look_drag := Vector2.ZERO
@@ -14,7 +14,7 @@ var _cam: Camera3D
 func _ready() -> void:
 	_cam = Camera3D.new()
 	_cam.name = "Camera3D"
-	_cam.fov = 54.0
+	_cam.fov = 46.0
 	_cam.near = 0.15
 	_cam.far = 240.0
 	add_child(_cam)
